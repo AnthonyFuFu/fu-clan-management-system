@@ -1,70 +1,66 @@
-# Getting Started with Create React App
-
+# fu-clan-management-system 傅氏宗親會管理系統
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+## 建立 React 專案
+```
+npx create-react-app fu-clan-management-system
+```
 
-In the project directory, you can run:
+## 安裝路由
+```
+npm install react-router-dom
+```
 
-### `npm start`
+## 安裝狀態管理工具
+```
+npm install redux react-redux @reduxjs/toolkit
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 安裝工具函式庫
+```
+npm install dayjs lodash axios
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 集成 Electron
+```
+npm install --save-dev electron electron-builder concurrently wait-on cross-env electron-is-dev
+```
 
-### `npm test`
+## 啟動開發環境
+```
+npm run electron:dev
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 啟動專案前安裝套件
+```
+npm install
+```
 
-### `npm run build`
+## 啟動專案
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 測試網址
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+http://localhost:3000/
+```
 
-### `npm run eject`
+## 構建 React 應用
+```
+npm run build
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 使用 electron-builder 打包
+```
+npx electron-builder
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 針對特定平台打包
+```
+npx electron-builder --windows
+npx electron-builder --mac
+npx electron-builder --linux
+```

@@ -1,0 +1,22 @@
+.logo {
+    height: 64px;
+    padding: 16px;
+    color: #001529;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.site-layout-header {
+    background: #fff;
+    padding: 0;
+    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+}
+
+.site-layout-content {
+    background: #fff;
+    border-radius: 4px;
+}
