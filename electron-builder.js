@@ -5,7 +5,9 @@ module.exports = {
   files: [
     "build/**/*",
     "main.js",
-    "package.json"
+    "electron/**/*",
+    "package.json",
+    "node_modules/**/*"
   ],
   extraMetadata: {
     main: "main.js"

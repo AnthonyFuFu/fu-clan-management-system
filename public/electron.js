@@ -1,7 +1,8 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
+const { initDatabase, getDashboardStats } = require('../electron/db');
 
 let mainWindow;
 
@@ -10,8 +11,9 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      preload: path.join(__dirname, '../electron/preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
     }
   });
 
@@ -43,7 +45,11 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  await initDatabase(app.getPath('userData'));
+  ipcMain.handle('get-dashboard-stats', () => getDashboardStats());
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

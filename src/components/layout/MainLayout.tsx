@@ -15,7 +15,11 @@ import './MainLayout.css';
 
 const { Header, Sider, Content } = Layout;
 
-const MainLayout = ({ children }) => {
+interface MainLayoutProps {
+  children: React.ReactNode;
+}
+
+const MainLayout = ({ children }: MainLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 

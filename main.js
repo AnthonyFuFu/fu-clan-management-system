@@ -1,7 +1,8 @@
-const { app, BrowserWindow} = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
+const { initDatabase, getDashboardStats } = require('./electron/db');
 
 // 保持一個對於 window 物件的全域引用
 let mainWindow;
@@ -12,9 +13,9 @@ function createWindow() {
         width: 1200,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            enableRemoteModule: true
+            preload: path.join(__dirname, 'electron/preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true
         },
         icon: path.join(__dirname, 'build/icon.png'),
         title: '傅氏宗親會管理系統'
@@ -55,7 +56,11 @@ function createWindow() {
 }
 
 // 當 Electron 完成初始化並準備建立瀏覽器視窗時，呼叫此方法
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+    await initDatabase(app.getPath('userData'));
+    ipcMain.handle('get-dashboard-stats', () => getDashboardStats());
+    createWindow();
+});
 
 // 當所有視窗都關閉時結束程序
 app.on('window-all-closed', () => {
