@@ -1,0 +1,8 @@
+{
+  // 只給編輯器與 `npx tsc -p tests` 型別檢查用；測試本身由 Vitest 執行
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
+  "include": ["**/*", "../src", "../shared", "../electron"]
+}

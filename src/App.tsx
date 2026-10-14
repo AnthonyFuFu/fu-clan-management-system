@@ -2,7 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import zhTW from 'antd/locale/zh_TW';
-import MainLayout from './components/layout/MainLayout';
+import MainLayout from './components/MainLayout';
 import Dashboard from './pages/Dashboard';
 import FamilyTree from './pages/FamilyTree';
 import Finance from './pages/Finance';

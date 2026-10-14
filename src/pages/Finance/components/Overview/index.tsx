@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Empty, Progress, Row, Statistic, Typography } from 'antd';
-import { formatMoney } from './constants';
+import { Card, Col, Progress, Row, Statistic, Typography } from 'antd';
+import type { CategoryTotal, FinanceSummary } from '@shared/types';
+import { formatMoney } from '@/utils/format';
+import { EXPENSE_COLOR, INCOME_COLOR } from '../../constants';
+import Breakdown from './Breakdown';
 
 const { Text } = Typography;
 
@@ -8,29 +11,6 @@ interface FinanceOverviewProps {
   year: number;
   version: number;
 }
-
-const INCOME_COLOR = '#3f8600';
-const EXPENSE_COLOR = '#cf1322';
-
-const Breakdown = ({ rows, color }: { rows: CategoryTotal[]; color: string }) => {
-  const total = rows.reduce((sum, row) => sum + row.amount, 0);
-  if (total === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本年度沒有資料" />;
-  }
-  return (
-    <div>
-      {rows.map((row) => (
-        <div className="finance-breakdown-row" key={row.category}>
-          <Text className="finance-breakdown-name">{row.category}</Text>
-          <div className="finance-bar" title={`${Math.round((row.amount / total) * 100)}%`}>
-            <div className="finance-bar-fill" style={{ width: `${(row.amount / total) * 100}%`, background: color }} />
-          </div>
-          <Text className="finance-breakdown-amount">{formatMoney(row.amount)}</Text>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const FinanceOverview = ({ year, version }: FinanceOverviewProps) => {
   const [summary, setSummary] = useState<FinanceSummary | null>(null);

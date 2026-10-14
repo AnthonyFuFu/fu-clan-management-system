@@ -11,5 +11,5 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["main.ts", "electron/**/*.ts"]
+  "include": ["main.ts", "electron/**/*.ts", "shared/**/*.ts"]
 }

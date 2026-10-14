@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App as AntdApp } from 'antd';
-import Finance from './Finance';
+import type { DuesRecord } from '@shared/types';
+import Finance from '@/pages/Finance';
 
 const YEAR = new Date().getFullYear();
 

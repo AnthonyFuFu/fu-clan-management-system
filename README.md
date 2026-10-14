@@ -18,19 +18,57 @@
 ## 專案結構
 
 ```
-├── index.html             # Vite 入口 HTML
-├── src/                   # React 前端原始碼（.ts / .tsx，由 Vite 編譯）
-│   └── assets/            # 應用程式圖示（icon.ico / icon.icns / icon.png，打包時使用）
-├── public/                # 靜態資源（原樣複製到 build/）
-├── electron/
-│   ├── db.ts              # SQLite 資料庫初始化與查詢邏輯
-│   └── preload.ts         # Electron preload script（contextBridge 安全橋接）
-├── main.ts                # Electron 主程序進入點（開發與正式版共用）
-├── vite.config.mts        # Vite / Vitest 設定
-├── tsconfig.json          # 前端 (src/) 的 TypeScript 設定
-├── tsconfig.electron.json # 主程序 (electron/、main.ts) 的 TypeScript 設定
-└── electron-builder.js    # electron-builder 打包設定
+├── index.html                 # Vite 入口 HTML
+├── main.ts                    # Electron 主程序進入點（開發與正式版共用）
+├── shared/                    # 主程序與畫面共用（兩邊都 import 這裡，不要各寫一份）
+│   ├── types.ts               # 資料型別（宗親、世系圖、財務…）
+│   ├── ipc.ts                 # window.electronAPI 介面；方法名稱就是 IPC channel 名稱
+│   └── finance.ts             # 財務規則常數（預設會費、收支類別）
+├── electron/                  # 主程序（Node.js 環境）
+│   ├── ipc.ts                 # 註冊所有 IPC handler
+│   ├── preload.ts             # contextBridge 暴露 window.electronAPI（沙箱環境，只能 import type）
+│   └── db/                    # SQLite 資料庫
+│       ├── index.ts           # initDatabase 與對外匯出的查詢函式
+│       ├── connection.ts      # 連線、存檔、查詢與交易工具
+│       ├── schema.ts          # 資料表結構與版本升級
+│       ├── seed.ts            # 新安裝時的範例資料
+│       ├── members.ts         # 宗親搜尋、世系圖
+│       ├── finance.ts         # 會費名單、收支明細、統計
+│       └── dashboard.ts       # 首頁儀表板統計
+├── src/                       # 畫面（React）
+│   ├── App.tsx                # 路由
+│   ├── components/            # 跨頁面共用元件（MainLayout、DesktopOnlyNotice）
+│   ├── hooks/                 # 共用 hooks（useAsyncAction：操作成功/失敗提示）
+│   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息）
+│   ├── types/                 # 全域型別宣告（window.electronAPI）
+│   ├── assets/                # 應用程式圖示（打包時使用）
+│   └── pages/                 # 每個功能頁面一個資料夾
+│       ├── Dashboard/
+│       ├── FamilyTree/        # index.tsx + layout.ts（座標計算）+ theme.ts（配色）+ components/
+│       └── Finance/           # index.tsx + constants.ts + components/（Overview、DuesTab、TransactionsTab）
+├── tests/                     # 所有測試（Vitest）
+│   ├── setup.ts               # 測試環境設定
+│   ├── App.test.tsx
+│   ├── pages/                 # 畫面測試（jsdom）
+│   └── electron/              # 資料庫測試（Node 環境，使用暫存資料夾，不影響實際資料）
+├── public/                    # 靜態資源（原樣複製到 build/）
+├── vite.config.mts            # Vite / Vitest 設定（含 @ 與 @shared 路徑別名）
+├── tsconfig.json              # 畫面 (src/、shared/) 的 TypeScript 設定
+├── tsconfig.electron.json     # 主程序 (main.ts、electron/、shared/) 的 TypeScript 設定
+└── electron-builder.js        # electron-builder 打包設定
 ```
+
+### 新增功能頁面的慣例
+
+1. 在 `src/pages/<功能名稱>/` 建立資料夾，進入點為 `index.tsx`；頁面專用的子元件放在該資料夾的 `components/`，常數放 `constants.ts`。
+2. 兩個以上頁面都會用到的元件、hook、工具函式，才放到 `src/components/`、`src/hooks/`、`src/utils/`。
+3. 需要讀寫資料庫時：
+   - 在 `shared/types.ts` 加資料型別、在 `shared/ipc.ts` 的 `ElectronAPI` 加方法；
+   - 在 `electron/db/` 實作查詢，並從 `electron/db/index.ts` 匯出；
+   - 在 `electron/ipc.ts` 註冊 handler（寫入類用 `handleWrite`，會自動存檔）、在 `electron/preload.ts` 補上對應方法。
+
+   漏了任何一邊，TypeScript 編譯時就會報錯。
+4. 畫面中引用共用程式時使用路徑別名：`@/` 代表 `src/`，`@shared/` 代表 `shared/`。主程序（electron/）不支援別名，請用相對路徑。
 
 以下資料夾由指令產生，已加入 `.gitignore`，不需手動維護：
 
@@ -92,8 +130,9 @@ npm start
 | `npm run build:electron` | 編譯 Electron 主程序 TypeScript 到 `dist-electron/` |
 | `npm run electron` | 編譯主程序後以 Electron 開啟已編譯的 `build/`，等同正式版行為（需先 `npm run build`） |
 | `npm run electron:build` | 完整打包成可安裝的桌面應用程式（見下方「打包與安裝」） |
-| `npm test` | 以 Vitest 執行測試（watch 模式，存檔自動重跑；按 `q` 離開） |
+| `npm test` | 以 Vitest 執行 `tests/` 底下的測試（watch 模式，存檔自動重跑；按 `q` 離開） |
 | `npx vitest run` | 只執行一次測試（適合 CI 或提交前檢查） |
+| `npx tsc --noEmit -p tests` | 型別檢查測試檔（Vitest 執行時不做型別檢查） |
 
 ### 疑難排解
 

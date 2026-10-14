@@ -1,26 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  App,
-  Button,
-  DatePicker,
-  Empty,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Popconfirm,
-  Segmented,
-  Select,
-  Table,
-  Tag,
-  Typography,
-} from 'antd';
+import { Button, Empty, Input, Popconfirm, Segmented, Table, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { PlusOutlined, CheckOutlined } from '@ant-design/icons';
-import dayjs, { Dayjs } from 'dayjs';
-import { DATE_FORMAT, DEFAULT_DUES_AMOUNT, errorMessage, formatMoney } from './constants';
+import type { DuesRecord } from '@shared/types';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { formatMoney } from '@/utils/format';
+import AddMemberModal from './AddMemberModal';
+import CreateYearModal from './CreateYearModal';
+import EditDuesModal from './EditDuesModal';
+import PayModal from './PayModal';
+import { isSettled, StatusTag } from './status';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface DuesTabProps {
   year: number;
@@ -30,20 +21,8 @@ interface DuesTabProps {
 
 type StatusFilter = 'all' | 'unpaid' | 'paid';
 
-// amountDue 0 = 減免（exempt）: on the roster, but nothing to collect.
-function isSettled(row: DuesRecord): boolean {
-  return row.paidDate !== null || row.amountDue === 0;
-}
-
-function StatusTag({ row }: { row: DuesRecord }) {
-  if (row.amountDue === 0) {
-    return <Tag>免繳</Tag>;
-  }
-  return row.paidDate ? <Tag color="green">已繳</Tag> : <Tag color="orange">未繳</Tag>;
-}
-
 const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
-  const { message } = App.useApp();
+  const runAction = useAsyncAction();
   const api = window.electronAPI!;
   const [rows, setRows] = useState<DuesRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,17 +44,11 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
       .finally(() => setLoading(false));
   }, [api, year, version]);
 
-  // Wrap every write: report the outcome, then reload all finance views.
-  const run = async (action: () => Promise<unknown>, success: string) => {
-    try {
-      await action();
-      message.success(success);
-      onChanged();
-      return true;
-    } catch (error) {
-      message.error(`操作失敗：${errorMessage(error)}`);
-      return false;
-    }
+  // 每次寫入：顯示結果，成功後通知所有財務畫面重新載入
+  const run = async <T,>(action: () => Promise<T>, success: string | ((result: T) => string), errorPrefix?: string) => {
+    const ok = await runAction(action, success, errorPrefix);
+    if (ok) onChanged();
+    return ok;
   };
 
   const filtered = useMemo(
@@ -156,14 +129,12 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           onSubmit={async (amount) => {
-            try {
-              const count = await api.createDuesYear(year, amount);
-              message.success(`已開立 ${year} 年度會費，共 ${count} 人`);
-              setCreateOpen(false);
-              onChanged();
-            } catch (error) {
-              message.error(`開立失敗：${errorMessage(error)}`);
-            }
+            const ok = await run(
+              () => api.createDuesYear(year, amount),
+              (count) => `已開立 ${year} 年度會費，共 ${count} 人`,
+              '開立失敗'
+            );
+            if (ok) setCreateOpen(false);
           }}
         />
       </>
@@ -265,150 +236,6 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
         }}
       />
     </div>
-  );
-};
-
-const CreateYearModal = ({
-  year,
-  open,
-  onClose,
-  onSubmit,
-}: {
-  year: number;
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (amount: number) => Promise<void>;
-}) => {
-  const [form] = Form.useForm<{ amount: number }>();
-  return (
-    <Modal
-      title={`開立 ${year} 年度會費`}
-      open={open}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText="開立"
-      destroyOnHidden
-    >
-      <Paragraph type="secondary">
-        應繳名單會沿用前一年度的名單；如果是第一次開立，則列入當年滿 20 歲、未滿 100 歲（或未登記生日）的宗親。開立後仍可個別加入、移除或調整金額。
-      </Paragraph>
-      <Form form={form} layout="vertical" initialValues={{ amount: DEFAULT_DUES_AMOUNT }} onFinish={(v) => onSubmit(v.amount)}>
-        <Form.Item label="每人會費" name="amount" rules={[{ required: true, message: '請輸入金額' }]}>
-          <InputNumber min={0} precision={0} step={100} suffix="元" style={{ width: 200 }} />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-};
-
-const PayModal = ({
-  count,
-  open,
-  onClose,
-  onSubmit,
-}: {
-  count: number;
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (date: string) => Promise<void>;
-}) => {
-  const [form] = Form.useForm<{ date: Dayjs }>();
-  return (
-    <Modal title={`登記繳費（${count} 人）`} open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnHidden>
-      <Form form={form} layout="vertical" initialValues={{ date: dayjs() }} onFinish={(v) => onSubmit(v.date.format(DATE_FORMAT))}>
-        <Form.Item label="繳費日期" name="date" rules={[{ required: true, message: '請選擇日期' }]}>
-          <DatePicker format={DATE_FORMAT} />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-};
-
-const EditDuesModal = ({
-  record,
-  onClose,
-  onSubmit,
-}: {
-  record: DuesRecord | null;
-  onClose: () => void;
-  onSubmit: (amount: number, note: string | null) => Promise<void>;
-}) => {
-  const [form] = Form.useForm<{ amount: number; note?: string }>();
-  return (
-    <Modal
-      title={record ? `編輯：${record.name}` : ''}
-      open={record !== null}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      destroyOnHidden
-    >
-      {record && (
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{ amount: record.amountDue, note: record.note ?? '' }}
-          onFinish={(v) => onSubmit(v.amount, v.note?.trim() || null)}
-        >
-          <Form.Item label="應繳金額" name="amount" extra="減免可調低金額，設為 0 即為免繳" rules={[{ required: true, message: '請輸入金額' }]}>
-            <InputNumber min={0} precision={0} step={100} suffix="元" style={{ width: 200 }} />
-          </Form.Item>
-          <Form.Item label="備註" name="note">
-            <Input.TextArea rows={2} maxLength={200} placeholder="例如：減半（清寒）、代繳人、收據編號" />
-          </Form.Item>
-        </Form>
-      )}
-    </Modal>
-  );
-};
-
-const AddMemberModal = ({
-  year,
-  open,
-  existingMemberIds,
-  onClose,
-  onSubmit,
-}: {
-  year: number;
-  open: boolean;
-  existingMemberIds: number[];
-  onClose: () => void;
-  onSubmit: (memberId: number, amount: number) => Promise<void>;
-}) => {
-  const [form] = Form.useForm<{ memberId: number; amount: number }>();
-  const [options, setOptions] = useState<MemberSummary[]>([]);
-
-  const search = (keyword: string) => {
-    window.electronAPI?.searchMembers(keyword).then(setOptions);
-  };
-
-  useEffect(() => {
-    if (open) search('');
-  }, [open]);
-
-  return (
-    <Modal title={`加入 ${year} 年度應繳名單`} open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnHidden>
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ amount: DEFAULT_DUES_AMOUNT }}
-        onFinish={(v) => onSubmit(v.memberId, v.amount)}
-      >
-        <Form.Item label="宗親" name="memberId" rules={[{ required: true, message: '請選擇宗親' }]}>
-          <Select
-            showSearch={{ filterOption: false, onSearch: search }}
-            placeholder="輸入姓名搜尋"
-            options={options.map((m) => ({
-              value: m.id,
-              label: `${m.name}（第 ${m.generation} 世）`,
-              disabled: existingMemberIds.includes(m.id),
-            }))}
-          />
-        </Form.Item>
-        <Form.Item label="應繳金額" name="amount" rules={[{ required: true, message: '請輸入金額' }]}>
-          <InputNumber min={0} precision={0} step={100} suffix="元" style={{ width: 200 }} />
-        </Form.Item>
-      </Form>
-    </Modal>
   );
 };
 

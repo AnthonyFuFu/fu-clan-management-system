@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic } from 'antd';
 import { UserOutlined, TeamOutlined, CalendarOutlined, BankOutlined } from '@ant-design/icons';
+import type { DashboardStats } from '@shared/types';
 
 // Fallback values shown when not running inside Electron (e.g. `npm start` in a plain browser)
 const EMPTY_STATS: DashboardStats = {

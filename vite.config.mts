@@ -1,9 +1,16 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
+    },
+  },
   // Electron 正式版以 file:// 載入 build/index.html，資源路徑必須是相對路徑
   base: './',
   server: {
@@ -20,7 +27,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
+    include: ['tests/**/*.test.{ts,tsx}'],
+    setupFiles: './tests/setup.ts',
     css: false,
   },
 });

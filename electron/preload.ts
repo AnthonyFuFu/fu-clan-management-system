@@ -1,22 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FinanceTransactionInput } from './db';
+// 只能用 `import type`：preload 在沙箱中執行，除了 electron 模組之外無法 require 其他檔案。
+import type { ElectronAPI, IpcChannel } from '../shared/ipc';
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
-  searchMembers: (keyword: string) => ipcRenderer.invoke('search-members', keyword),
-  getFamilyTree: (memberId: number) => ipcRenderer.invoke('get-family-tree', memberId),
+function invoke<K extends IpcChannel>(channel: K, ...args: Parameters<ElectronAPI[K]>): ReturnType<ElectronAPI[K]> {
+  return ipcRenderer.invoke(channel, ...args) as ReturnType<ElectronAPI[K]>;
+}
 
-  getFinanceYears: () => ipcRenderer.invoke('get-finance-years'),
-  getFinanceSummary: (year: number) => ipcRenderer.invoke('get-finance-summary', year),
-  getDues: (year: number) => ipcRenderer.invoke('get-dues', year),
-  createDuesYear: (year: number, amount: number) => ipcRenderer.invoke('create-dues-year', year, amount),
-  addDuesMember: (year: number, memberId: number, amount: number) =>
-    ipcRenderer.invoke('add-dues-member', year, memberId, amount),
-  removeDues: (id: number) => ipcRenderer.invoke('remove-dues', id),
-  setDuesPaid: (ids: number[], paidDate: string | null) => ipcRenderer.invoke('set-dues-paid', ids, paidDate),
-  updateDues: (id: number, amountDue: number, note: string | null) =>
-    ipcRenderer.invoke('update-dues', id, amountDue, note),
-  getTransactions: (year: number) => ipcRenderer.invoke('get-transactions', year),
-  saveTransaction: (tx: FinanceTransactionInput) => ipcRenderer.invoke('save-transaction', tx),
-  deleteTransaction: (id: number) => ipcRenderer.invoke('delete-transaction', id),
-});
+const electronAPI: ElectronAPI = {
+  getDashboardStats: () => invoke('getDashboardStats'),
+
+  searchMembers: (keyword) => invoke('searchMembers', keyword),
+  getFamilyTree: (memberId) => invoke('getFamilyTree', memberId),
+
+  getFinanceYears: () => invoke('getFinanceYears'),
+  getFinanceSummary: (year) => invoke('getFinanceSummary', year),
+  getDues: (year) => invoke('getDues', year),
+  createDuesYear: (year, amount) => invoke('createDuesYear', year, amount),
+  addDuesMember: (year, memberId, amount) => invoke('addDuesMember', year, memberId, amount),
+  removeDues: (id) => invoke('removeDues', id),
+  setDuesPaid: (ids, paidDate) => invoke('setDuesPaid', ids, paidDate),
+  updateDues: (id, amountDue, note) => invoke('updateDues', id, amountDue, note),
+  getTransactions: (year) => invoke('getTransactions', year),
+  saveTransaction: (tx) => invoke('saveTransaction', tx),
+  deleteTransaction: (id) => invoke('deleteTransaction', id),
+};
+
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

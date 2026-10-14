@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Select, Tabs } from 'antd';
-import FinanceOverview from './finance/FinanceOverview';
-import DuesTab from './finance/DuesTab';
-import TransactionsTab from './finance/TransactionsTab';
+import { Select, Tabs } from 'antd';
+import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
+import FinanceOverview from './components/Overview';
+import DuesTab from './components/DuesTab';
+import TransactionsTab from './components/TransactionsTab';
 import './Finance.css';
 
 const Finance = () => {
@@ -21,12 +22,7 @@ const Finance = () => {
   }, [version]);
 
   if (!window.electronAPI) {
-    return (
-      <div>
-        <h1>財務管理</h1>
-        <Alert type="info" showIcon title="財務資料儲存在桌面版的資料庫中，請以 npm run electron:dev 開啟。" />
-      </div>
-    );
+    return <DesktopOnlyNotice title="財務管理" />;
   }
 
   return (

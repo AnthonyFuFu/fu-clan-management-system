@@ -1,24 +1,7 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'path';
-import {
-    initDatabase,
-    getDashboardStats,
-    saveDatabase,
-    searchMembers,
-    getFamilyTree,
-    getFinanceYears,
-    getFinanceSummary,
-    getDues,
-    createDuesYear,
-    addDuesMember,
-    removeDues,
-    setDuesPaid,
-    updateDues,
-    getTransactions,
-    saveTransaction,
-    deleteTransaction,
-    FinanceTransactionInput,
-} from './electron/db';
+import { initDatabase, saveDatabase } from './electron/db';
+import { registerIpcHandlers } from './electron/ipc';
 
 // 由 npm run electron:dev 設定；有值時載入 Vite 開發伺服器，否則載入編譯好的 build/
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -64,32 +47,7 @@ function createWindow(): void {
 // 當 Electron 完成初始化並準備建立瀏覽器視窗時，呼叫此方法
 app.whenReady().then(async () => {
     await initDatabase(app.getPath('userData'));
-    ipcMain.handle('get-dashboard-stats', () => getDashboardStats());
-    ipcMain.handle('search-members', (_event, keyword: string) => searchMembers(keyword));
-    ipcMain.handle('get-family-tree', (_event, memberId: number) => getFamilyTree(memberId));
-
-    // 財務：寫入類操作完成後立即存檔，避免程式異常結束時遺失帳目
-    const persist = <T>(write: () => T): T => {
-        const result = write();
-        saveDatabase();
-        return result;
-    };
-    ipcMain.handle('get-finance-years', () => getFinanceYears());
-    ipcMain.handle('get-finance-summary', (_event, year: number) => getFinanceSummary(year));
-    ipcMain.handle('get-dues', (_event, year: number) => getDues(year));
-    ipcMain.handle('create-dues-year', (_event, year: number, amount: number) =>
-        persist(() => createDuesYear(year, amount)));
-    ipcMain.handle('add-dues-member', (_event, year: number, memberId: number, amount: number) =>
-        persist(() => addDuesMember(year, memberId, amount)));
-    ipcMain.handle('remove-dues', (_event, id: number) => persist(() => removeDues(id)));
-    ipcMain.handle('set-dues-paid', (_event, ids: number[], paidDate: string | null) =>
-        persist(() => setDuesPaid(ids, paidDate)));
-    ipcMain.handle('update-dues', (_event, id: number, amountDue: number, note: string | null) =>
-        persist(() => updateDues(id, amountDue, note)));
-    ipcMain.handle('get-transactions', (_event, year: number) => getTransactions(year));
-    ipcMain.handle('save-transaction', (_event, tx: FinanceTransactionInput) =>
-        persist(() => saveTransaction(tx)));
-    ipcMain.handle('delete-transaction', (_event, id: number) => persist(() => deleteTransaction(id)));
+    registerIpcHandlers();
     createWindow();
 });
 
