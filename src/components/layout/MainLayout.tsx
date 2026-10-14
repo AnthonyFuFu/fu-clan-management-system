@@ -9,6 +9,7 @@ import {
   SettingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './MainLayout.css';
@@ -43,6 +44,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </Menu.Item>
           <Menu.Item key="/members" icon={<TeamOutlined />}>
             <Link to="/members">宗親成員管理</Link>
+          </Menu.Item>
+          <Menu.Item key="/family-tree" icon={<ApartmentOutlined />}>
+            <Link to="/family-tree">宗親世系圖</Link>
           </Menu.Item>
           <Menu.Item key="/events" icon={<CalendarOutlined />}>
             <Link to="/events">活動與聚會</Link>

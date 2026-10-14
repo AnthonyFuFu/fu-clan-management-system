@@ -1,12 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const isDev = require('electron-is-dev');
-const { initDatabase, getDashboardStats } = require('../electron/db');
+import { app, BrowserWindow, ipcMain } from 'electron';
+import path from 'path';
+import fs from 'fs';
+import isDev from 'electron-is-dev';
+import { initDatabase, getDashboardStats, saveDatabase, searchMembers, getFamilyTree } from '../electron/db';
 
-let mainWindow;
+let mainWindow: BrowserWindow | null;
 
-function createWindow() {
+function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -20,7 +20,7 @@ function createWindow() {
   mainWindow.loadURL(
     isDev
       ? 'http://localhost:3000'
-      : `file://${path.join(__dirname, '../build/index.html')}`
+      : `file://${path.join(__dirname, '../../build/index.html')}`
   );
 
   if (isDev) {
@@ -48,10 +48,13 @@ function createWindow() {
 app.whenReady().then(async () => {
   await initDatabase(app.getPath('userData'));
   ipcMain.handle('get-dashboard-stats', () => getDashboardStats());
+  ipcMain.handle('search-members', (_event, keyword: string) => searchMembers(keyword));
+  ipcMain.handle('get-family-tree', (_event, memberId: number) => getFamilyTree(memberId));
   createWindow();
 });
 
 app.on('window-all-closed', () => {
+  saveDatabase();
   if (process.platform !== 'darwin') {
     app.quit();
   }

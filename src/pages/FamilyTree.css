@@ -1,0 +1,23 @@
+.familyTreeNode {
+  transition: left 0.4s ease, top 0.4s ease, background-color 0.4s ease, opacity 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.familyTreeNode--locking {
+  animation: familyTreeLockIn 0.5s ease;
+}
+
+@keyframes familyTreeLockIn {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(90, 110, 120, 0);
+  }
+  40% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 6px rgba(90, 110, 120, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(90, 110, 120, 0);
+  }
+}

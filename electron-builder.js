@@ -4,13 +4,12 @@ module.exports = {
   productName: "傅氏宗親會管理系統",
   files: [
     "build/**/*",
-    "main.js",
-    "electron/**/*",
+    "dist-electron/**/*",
     "package.json",
     "node_modules/**/*"
   ],
   extraMetadata: {
-    main: "main.js"
+    main: "dist-electron/main.js"
   },
   directories: {
     buildResources: "assets",
