@@ -1,0 +1,77 @@
+.finance-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.finance-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.finance-toolbar-spacer {
+  flex: 1;
+}
+
+.finance-breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.finance-breakdown-name {
+  flex: 0 0 64px;
+  white-space: nowrap;
+}
+
+.finance-breakdown-amount {
+  flex: 0 0 auto;
+  min-width: 80px;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.finance-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.finance-amount--income {
+  color: #3f8600;
+}
+
+.finance-amount--expense {
+  color: #cf1322;
+}
+
+/* Cards in the same row stretch to equal height */
+.finance-card {
+  height: 100%;
+}
+
+.finance-dues-progress {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  line-height: 2;
+}
+
+.finance-bar {
+  flex: 1;
+  min-width: 24px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.finance-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}

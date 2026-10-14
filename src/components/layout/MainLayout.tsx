@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -15,6 +16,16 @@ import { Link, useLocation } from 'react-router-dom';
 import './MainLayout.css';
 
 const { Header, Sider, Content } = Layout;
+
+const menuItems: MenuProps['items'] = [
+  { key: '/', icon: <UserOutlined />, label: <Link to="/">首頁儀表板</Link> },
+  { key: '/members', icon: <TeamOutlined />, label: <Link to="/members">宗親成員管理</Link> },
+  { key: '/family-tree', icon: <ApartmentOutlined />, label: <Link to="/family-tree">宗親世系圖</Link> },
+  { key: '/events', icon: <CalendarOutlined />, label: <Link to="/events">活動與聚會</Link> },
+  { key: '/finance', icon: <BankOutlined />, label: <Link to="/finance">財務管理</Link> },
+  { key: '/documents', icon: <FileTextOutlined />, label: <Link to="/documents">文件檔案</Link> },
+  { key: '/settings', icon: <SettingOutlined />, label: <Link to="/settings">系統設定</Link> },
+];
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -38,29 +49,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           theme="light"
           mode="inline"
           selectedKeys={[location.pathname]}
-        >
-          <Menu.Item key="/" icon={<UserOutlined />}>
-            <Link to="/">首頁儀表板</Link>
-          </Menu.Item>
-          <Menu.Item key="/members" icon={<TeamOutlined />}>
-            <Link to="/members">宗親成員管理</Link>
-          </Menu.Item>
-          <Menu.Item key="/family-tree" icon={<ApartmentOutlined />}>
-            <Link to="/family-tree">宗親世系圖</Link>
-          </Menu.Item>
-          <Menu.Item key="/events" icon={<CalendarOutlined />}>
-            <Link to="/events">活動與聚會</Link>
-          </Menu.Item>
-          <Menu.Item key="/finance" icon={<BankOutlined />}>
-            <Link to="/finance">財務管理</Link>
-          </Menu.Item>
-          <Menu.Item key="/documents" icon={<FileTextOutlined />}>
-            <Link to="/documents">文件檔案</Link>
-          </Menu.Item>
-          <Menu.Item key="/settings" icon={<SettingOutlined />}>
-            <Link to="/settings">系統設定</Link>
-          </Menu.Item>
-        </Menu>
+          items={menuItems}
+        />
       </Sider>
       <Layout className="site-layout">
         <Header className="site-layout-header" style={{ padding: 0, background: '#fff' }}>

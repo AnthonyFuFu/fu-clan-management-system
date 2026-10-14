@@ -8,23 +8,20 @@ module.exports = {
     "package.json",
     "node_modules/**/*"
   ],
-  extraMetadata: {
-    main: "dist-electron/main.js"
-  },
   directories: {
     buildResources: "assets",
     output: "dist"
   },
   win: {
     target: ["nsis"],
-    icon: "assets/icon.ico"
+    icon: "src/assets/icon.ico"
   },
   mac: {
     target: ["dmg"],
-    icon: "assets/icon.icns"
+    icon: "src/assets/icon.icns"
   },
   linux: {
     target: ["AppImage"],
-    icon: "assets/icon.png"
+    icon: "src/assets/icon.png"
   }
 };

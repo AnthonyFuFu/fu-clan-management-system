@@ -1,8 +1,27 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import fs from 'fs';
-import isDev from 'electron-is-dev';
-import { initDatabase, getDashboardStats, saveDatabase, searchMembers, getFamilyTree } from './electron/db';
+import {
+    initDatabase,
+    getDashboardStats,
+    saveDatabase,
+    searchMembers,
+    getFamilyTree,
+    getFinanceYears,
+    getFinanceSummary,
+    getDues,
+    createDuesYear,
+    addDuesMember,
+    removeDues,
+    setDuesPaid,
+    updateDues,
+    getTransactions,
+    saveTransaction,
+    deleteTransaction,
+    FinanceTransactionInput,
+} from './electron/db';
+
+// 由 npm run electron:dev 設定；有值時載入 Vite 開發伺服器，否則載入編譯好的 build/
+const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 
 // 保持一個對於 window 物件的全域引用
 let mainWindow: BrowserWindow | null;
@@ -22,28 +41,15 @@ function createWindow(): void {
     });
 
     // 載入應用程式
-    mainWindow.loadURL(
-        isDev ?
-        'http://localhost:3000' :
-        `file://${path.join(__dirname, '../build/index.html')}`
-    );
+    if (devServerUrl) {
+        mainWindow.loadURL(devServerUrl);
+    } else {
+        mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
+    }
 
     // 在開發環境下開啟開發者工具
-    if (isDev) {
+    if (devServerUrl) {
         mainWindow.webContents.openDevTools();
-    }
-    // 設置 ICU 數據目錄
-    if (!isDev) {
-        // 在打包應用中指定 ICU 數據路徑
-        process.env.ICU_DATA_DIR = path.join(process.resourcesPath, 'resources');
-      
-        // 檢查路徑是否存在
-        console.log('ICU 數據目錄:', process.env.ICU_DATA_DIR);
-        if (fs.existsSync(process.env.ICU_DATA_DIR)) {
-          console.log('ICU 數據目錄存在');
-        } else {
-          console.error('ICU 數據目錄不存在');
-        }
     }
 
     // 移除視窗的預設選單
@@ -61,6 +67,29 @@ app.whenReady().then(async () => {
     ipcMain.handle('get-dashboard-stats', () => getDashboardStats());
     ipcMain.handle('search-members', (_event, keyword: string) => searchMembers(keyword));
     ipcMain.handle('get-family-tree', (_event, memberId: number) => getFamilyTree(memberId));
+
+    // 財務：寫入類操作完成後立即存檔，避免程式異常結束時遺失帳目
+    const persist = <T>(write: () => T): T => {
+        const result = write();
+        saveDatabase();
+        return result;
+    };
+    ipcMain.handle('get-finance-years', () => getFinanceYears());
+    ipcMain.handle('get-finance-summary', (_event, year: number) => getFinanceSummary(year));
+    ipcMain.handle('get-dues', (_event, year: number) => getDues(year));
+    ipcMain.handle('create-dues-year', (_event, year: number, amount: number) =>
+        persist(() => createDuesYear(year, amount)));
+    ipcMain.handle('add-dues-member', (_event, year: number, memberId: number, amount: number) =>
+        persist(() => addDuesMember(year, memberId, amount)));
+    ipcMain.handle('remove-dues', (_event, id: number) => persist(() => removeDues(id)));
+    ipcMain.handle('set-dues-paid', (_event, ids: number[], paidDate: string | null) =>
+        persist(() => setDuesPaid(ids, paidDate)));
+    ipcMain.handle('update-dues', (_event, id: number, amountDue: number, note: string | null) =>
+        persist(() => updateDues(id, amountDue, note)));
+    ipcMain.handle('get-transactions', (_event, year: number) => getTransactions(year));
+    ipcMain.handle('save-transaction', (_event, tx: FinanceTransactionInput) =>
+        persist(() => saveTransaction(tx)));
+    ipcMain.handle('delete-transaction', (_event, id: number) => persist(() => deleteTransaction(id)));
     createWindow();
 });
 

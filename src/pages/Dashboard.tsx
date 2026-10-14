@@ -62,7 +62,7 @@ const Dashboard = () => {
         <Col span={6}>
           <Card loading={loading}>
             <Statistic
-              title="財務總額"
+              title="財務結餘"
               value={stats.financeTotal}
               prefix={<BankOutlined />}
               suffix="元"

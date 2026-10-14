@@ -2,116 +2,54 @@
     "name": "fu-clan-management-system",
     "version": "0.1.0",
     "private": true,
-    "main": "dist-electron/public/electron.js",
+    "main": "dist-electron/main.js",
     "homepage": "./",
     "dependencies": {
-        "@reduxjs/toolkit": "^2.11.2",
-        "@testing-library/dom": "^10.4.1",
-        "@testing-library/jest-dom": "^6.9.1",
-        "@testing-library/react": "^16.3.2",
-        "@testing-library/user-event": "^13.5.0",
-        "antd": "^6.3.0",
-        "axios": "^1.13.5",
-        "dayjs": "^1.11.19",
-        "lodash": "^4.17.23",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
-        "react-redux": "^9.2.0",
-        "react-router-dom": "^7.13.1",
-        "react-scripts": "5.0.1",
+        "@ant-design/icons": "^6.3.4",
+        "@reduxjs/toolkit": "^2.13.0",
+        "antd": "^6.6.6",
+        "axios": "^1.20.0",
+        "dayjs": "^1.11.23",
+        "lodash": "^4.18.1",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "react-redux": "^9.3.0",
+        "react-router-dom": "^7.18.4",
         "redux": "^5.0.1",
-        "sql.js": "^1.14.2",
-        "web-vitals": "^2.1.4"
-    },
-    "overrides": {
-        "typescript": "^5.9.3"
+        "sql.js": "^1.14.2"
     },
     "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject",
+        "start": "vite",
+        "build": "tsc --noEmit && vite build",
+        "preview": "vite preview",
+        "test": "vitest",
         "build:electron": "tsc -p tsconfig.electron.json",
         "electron": "npm run build:electron && electron .",
-        "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"npm run build:electron && wait-on http://localhost:3000 && electron .\"",
-        "prebuild": "rimraf build",
-        "preelectron:build": "npm run build && npm run build:electron",
-        "electron:build": "npm run build && electron-builder --config electron-builder.js"
-    },
-    "build": {
-        "appId": "com.fuclan.management",
-        "productName": "傅氏宗親會管理系統",
-        "files": [
-            "build/**/*",
-            "main.js",
-            "package.json",
-            "node_modules/**/*"
-        ],
-        "extraResources": [
-            {
-                "from": "node_modules/electron/dist/locales/",
-                "to": "locales"
-            },
-            {
-                "from": "node_modules/electron/dist/resources/",
-                "to": "resources"
-            }
-        ],
-        "directories": {
-            "buildResources": "assets"
-        },
-        "win": {
-            "target": [
-                "nsis"
-            ],
-            "icon": "assets/icon.ico"
-        },
-        "mac": {
-            "target": [
-                "dmg"
-            ],
-            "icon": "assets/icon.icns"
-        },
-        "linux": {
-            "target": [
-                "AppImage",
-                "deb"
-            ],
-            "icon": "assets/icon.png"
-        }
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
+        "electron:dev": "concurrently -k \"vite\" \"npm run build:electron && wait-on tcp:127.0.0.1:3000 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:3000 electron .\"",
+        "electron:build": "npm run build && npm run build:electron && electron-builder --config electron-builder.js"
     },
     "devDependencies": {
-        "@types/jest": "^30.0.0",
+        "@testing-library/dom": "^10.4.2",
+        "@testing-library/jest-dom": "^7.0.1",
+        "@testing-library/react": "^16.3.3",
+        "@testing-library/user-event": "^14.6.8",
         "@types/lodash": "^4.17.26",
         "@types/node": "^26.6.5",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@types/sql.js": "^1.4.11",
-        "concurrently": "^9.2.1",
+        "@vitejs/plugin-react": "^6.1.2",
+        "concurrently": "^10.0.6",
         "cross-env": "^10.1.0",
-        "electron": "^40.6.0",
-        "electron-builder": "^26.8.1",
-        "electron-is-dev": "^3.0.1",
-        "rimraf": "^6.1.3",
+        "electron": "^44.7.2",
+        "electron-builder": "^26.15.3",
+        "jsdom": "^29.1.1",
         "typescript": "^5.9.3",
-        "wait-on": "^9.0.4"
+        "vite": "^8.3.4",
+        "vitest": "^5.0.4",
+        "wait-on": "^9.5.1"
+    },
+    "overrides": {
+        "global-agent": "^4.1.3"
     }
 }

@@ -1,12 +1,13 @@
 # 傅氏宗親會管理系統 (fu-clan-management-system)
 
-以 [Create React App](https://github.com/facebook/create-react-app) + [Electron](https://www.electronjs.org/) 打造的桌面應用程式，前端使用 TypeScript + Ant Design，資料儲存於內嵌的 SQLite（[sql.js](https://sql.js.org/)）。
+以 [Vite](https://vite.dev/) + [Electron](https://www.electronjs.org/) 打造的桌面應用程式，前端使用 TypeScript + Ant Design，資料儲存於內嵌的 SQLite（[sql.js](https://sql.js.org/)）。
 
 ## 技術棧
 
 | 分類 | 工具 |
 |---|---|
 | 前端框架 | React 19 + TypeScript |
+| 建置工具 | Vite（測試：Vitest + Testing Library） |
 | UI 元件庫 | Ant Design (antd) |
 | 路由 | react-router-dom |
 | 狀態管理 | Redux Toolkit + react-redux |
@@ -17,26 +18,37 @@
 ## 專案結構
 
 ```
-├── src/                  # React 前端原始碼（.ts / .tsx，由 react-scripts 編譯）
-├── public/
-│   └── electron.ts       # Electron 主程序進入點（開發模式使用）
+├── index.html             # Vite 入口 HTML
+├── src/                   # React 前端原始碼（.ts / .tsx，由 Vite 編譯）
+│   └── assets/            # 應用程式圖示（icon.ico / icon.icns / icon.png，打包時使用）
+├── public/                # 靜態資源（原樣複製到 build/）
 ├── electron/
-│   ├── db.ts             # SQLite 資料庫初始化與查詢邏輯
-│   └── preload.ts        # Electron preload script（contextBridge 安全橋接）
-├── main.ts               # Electron 主程序進入點（打包後使用，見 electron-builder.js）
-├── tsconfig.json         # 前端 (src/) 的 TypeScript 設定
-├── tsconfig.electron.json# 主程序 (electron/、main.ts、public/electron.ts) 的 TypeScript 設定
-├── electron-builder.js   # electron-builder 打包設定
-└── dist-electron/        # 主程序編譯輸出（由 tsc 產生，已加入 .gitignore，不需手動維護）
+│   ├── db.ts              # SQLite 資料庫初始化與查詢邏輯
+│   └── preload.ts         # Electron preload script（contextBridge 安全橋接）
+├── main.ts                # Electron 主程序進入點（開發與正式版共用）
+├── vite.config.mts        # Vite / Vitest 設定
+├── tsconfig.json          # 前端 (src/) 的 TypeScript 設定
+├── tsconfig.electron.json # 主程序 (electron/、main.ts) 的 TypeScript 設定
+└── electron-builder.js    # electron-builder 打包設定
 ```
 
-> `main.ts` 與 `public/electron.ts` 內容幾乎相同，是有意保留的兩個進入點：
-> `public/electron.ts` 給開發模式（`npm run electron:dev`）使用，`main.ts` 給打包後的正式版使用（`electron-builder.js` 會在打包時把 `package.json` 的 `main` 換成編譯後的 `main.js`）。
+以下資料夾由指令產生，已加入 `.gitignore`，不需手動維護：
+
+| 資料夾 | 產生方式 | 內容 |
+|---|---|---|
+| `build/` | `npm run build` | 編譯後的前端 |
+| `dist-electron/` | `npm run build:electron` | 編譯後的主程序 |
+| `dist/` | `npm run electron:build` | 打包好的安裝檔 |
+
+> `npm run electron:dev` 會設定 `VITE_DEV_SERVER_URL`，主程序有讀到就載入 Vite 開發伺服器，否則載入 `build/index.html`。
+> 前端使用 `HashRouter`，因為正式版以 `file://` 載入，`BrowserRouter` 會找不到路由。
 
 ## 環境需求
 
-- Node.js 18+（建議與 CI/建置環境一致）
-- npm
+- Node.js **22.13 以上的 22.x、24.x 或 26 以上**（建議使用 LTS 24）
+  - Vitest 5、jsdom 29、concurrently 10 的共同需求，Node 20 與 23 無法使用
+  - 用 `node -v` 確認版本
+- npm 10 以上
 
 ## 快速開始
 
@@ -46,18 +58,26 @@
 npm install
 ```
 
+> 安裝時仍會看到 `inflight`、`glob@7`、`rimraf@2` 的 deprecated 警告，這些來自 electron-builder 內部，只在打包時使用，可以忽略。
+> `package.json` 的 `overrides` 強制使用 `global-agent` 4，用來排除 electron-builder 依賴中 `sprintf-js` 的安全性警告，請勿移除。
+
 ### 2. 啟動開發環境（Electron 視窗 + 熱重載）
 
 ```bash
 npm run electron:dev
 ```
 
+會同時啟動 Vite 開發伺服器與 Electron 視窗，並自動開啟開發者工具。
+
+- 修改 `src/` 底下的前端程式：存檔後畫面自動更新。
+- 修改 `main.ts` 或 `electron/` 底下的主程序：要按 `Ctrl+C` 停止後重新執行指令才會生效。
+
 ### 3. 純網頁開發（不開 Electron 視窗，瀏覽器測試用）
 
 ```bash
 npm start
 ```
-開啟 [http://localhost:3000](http://localhost:3000) 預覽。
+開啟 [http://127.0.0.1:3000](http://127.0.0.1:3000) 預覽。
 
 > ⚠️ 純瀏覽器模式不會執行 Electron 主程序，因此讀不到 SQLite 資料（`window.electronAPI` 不存在），僅適合純 UI 開發。
 
@@ -65,13 +85,37 @@ npm start
 
 | 指令 | 說明 |
 |---|---|
-| `npm start` | 啟動 React 開發伺服器（純瀏覽器） |
-| `npm run electron:dev` | 同時啟動 React 開發伺服器 + Electron 視窗，支援熱重載 |
-| `npm run build` | 編譯前端 React 程式到 `build/` |
+| `npm start` | 啟動 Vite 開發伺服器（純瀏覽器） |
+| `npm run electron:dev` | 同時啟動 Vite 開發伺服器 + Electron 視窗，前端支援熱重載 |
+| `npm run build` | 型別檢查並編譯前端到 `build/` |
+| `npm run preview` | 在瀏覽器預覽 `build/` 的編譯結果（需先 `npm run build`） |
 | `npm run build:electron` | 編譯 Electron 主程序 TypeScript 到 `dist-electron/` |
-| `npm run electron` | 編譯主程序後直接以 Electron 開啟（不含前端熱重載） |
+| `npm run electron` | 編譯主程序後以 Electron 開啟已編譯的 `build/`，等同正式版行為（需先 `npm run build`） |
 | `npm run electron:build` | 完整打包成可安裝的桌面應用程式（見下方「打包與安裝」） |
-| `npm test` | 執行測試 |
+| `npm test` | 以 Vitest 執行測試（watch 模式，存檔自動重跑；按 `q` 離開） |
+| `npx vitest run` | 只執行一次測試（適合 CI 或提交前檢查） |
+
+### 疑難排解
+
+- **`TypeError: Cannot read properties of undefined (reading 'whenReady')`**\
+  環境變數 `ELECTRON_RUN_AS_NODE=1` 讓 Electron 以純 Node 模式執行，某些在 VS Code 擴充功能內開啟的終端機會繼承這個變數。先清除再執行：
+  ```bash
+  unset ELECTRON_RUN_AS_NODE          # macOS / Linux
+  ```
+  ```powershell
+  Remove-Item Env:ELECTRON_RUN_AS_NODE  # Windows PowerShell
+  ```
+- **`npm error Exit handler never called!`、`sh: tsc: command not found`、`electron: command not found`**\
+  npm 安裝中途中斷，`node_modules` 不完整。刪除後重裝：
+  ```bash
+  rm -rf node_modules
+  npm install
+  ```
+  仍失敗可先執行 `npm cache clean --force`，或改用 npm 10（`npm i -g npm@10`）。
+- **`Error: Port 3000 is already in use`**\
+  Vite 固定使用 port 3000（Electron 要連到這個位址），請先關閉佔用的程式。macOS / Linux 可用 `lsof -i :3000` 找出是哪個程式。
+- **`npm warn EBADENGINE Unsupported engine`**\
+  Node.js 版本不符合「環境需求」，請升級 Node.js。
 
 ## 打包與安裝
 
@@ -82,11 +126,18 @@ npm run electron:build
 ```
 
 這個指令會依序：
-1. `npm run build` — 編譯 React 前端到 `build/`
-2. `npm run build:electron`（經由 `preelectron:build`）— 編譯 Electron 主程序到 `dist-electron/`
+1. `npm run build` — 編譯前端到 `build/`
+2. `npm run build:electron` — 編譯 Electron 主程序到 `dist-electron/`
 3. `electron-builder --config electron-builder.js` — 依照 [electron-builder.js](electron-builder.js) 設定打包
 
 打包完成後，安裝檔會輸出到 **`dist/`** 資料夾。
+
+只想確認打包後的程式能否正常執行、不需要產生安裝檔時，可以用 `--dir` 快速打包（macOS 產物在 `dist/mac-arm64/`）：
+
+```bash
+npm run build && npm run build:electron
+npx electron-builder --config electron-builder.js --dir
+```
 
 ### 各平台安裝檔與安裝方式
 
@@ -97,6 +148,10 @@ npm run electron:build
 | Linux | `.AppImage` | 下載後 `chmod +x <檔名>.AppImage`，直接執行 |
 
 > electron-builder 原生只能可靠地打包「目前所在的作業系統」對應的格式（例如要產生 `.dmg` 需要在 macOS 上執行）。若需跨平台打包，請參考 [electron-builder 官方文件](https://www.electron.build/multi-platform-build)。
+
+> **macOS 簽章**：electron-builder 會自動使用鑰匙圈中找到的 Apple 憑證簽章，但目前沒有設定公證（notarization）。在其他 Mac 上第一次開啟時可能出現「無法驗證開發者」，請在 Finder 中對 App 按右鍵 →「打開」。要正式散布，需設定 Apple Developer ID 與公證，請參考 [electron-builder 簽章文件](https://www.electron.build/code-signing-mac)。
+>
+> **Windows**：安裝程式沒有程式碼簽章，執行時 SmartScreen 可能顯示警告，點「其他資訊」→「仍要執行」即可。
 
 ### 使用者端安裝需求
 
@@ -117,32 +172,39 @@ npm run electron:build
 
 ## 開發歷程備忘（套件安裝指令）
 
-以下記錄專案初始化時安裝過的套件，僅供參考，正常開發請直接用上方的 `npm install`。
+以下記錄專案初始化與後續安裝過的套件，僅供參考，正常開發請直接用上方的 `npm install`。專案原本以 Create React App 建立，之後已遷移至 Vite，`react-scripts` 已移除。
 
 <details>
 <summary>展開查看</summary>
 
 ```bash
-# 建立 React 專案
-npx create-react-app fu-clan-management-system
+# React + UI 元件庫
+npm install react react-dom antd @ant-design/icons
 
-# 安裝路由
+# 路由
 npm install react-router-dom
 
-# 安裝狀態管理工具
+# 狀態管理
 npm install redux react-redux @reduxjs/toolkit
 
-# 安裝工具函式庫
+# 工具函式庫
 npm install dayjs lodash axios
-
-# 集成 Electron
-npm install --save-dev electron electron-builder concurrently wait-on cross-env electron-is-dev
 
 # SQLite（WebAssembly 版，無需原生編譯）
 npm install sql.js
 
-# TypeScript
-npm install --save-dev typescript @types/node @types/react @types/react-dom @types/jest @types/lodash @types/sql.js
+# 建置工具與測試（Vite / Vitest）
+npm install --save-dev vite @vitejs/plugin-react vitest jsdom@29
+npm install --save-dev @testing-library/react @testing-library/dom @testing-library/jest-dom @testing-library/user-event
+
+# Electron 與打包
+npm install --save-dev electron electron-builder concurrently wait-on cross-env
+
+# TypeScript 與型別定義
+npm install --save-dev typescript@5 @types/node @types/react @types/react-dom @types/lodash @types/sql.js
 ```
+
+> `jsdom` 固定在 29 版：30 版需要 Node.js 24.15 以上。
+> `typescript` 固定在 5.x：7.x 是以 Go 重寫的新版編譯器，周邊工具尚未完全支援。
 
 </details>
