@@ -3,6 +3,7 @@ import { DatePicker, Form, Input, InputNumber, Modal, Radio, Select } from 'antd
 import dayjs, { Dayjs } from 'dayjs';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@shared/finance';
 import type { FinanceTransaction, FinanceTransactionInput, TransactionType } from '@shared/types';
+import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 import { TRANSACTION_TYPE_LABEL } from '../../constants';
 
@@ -30,6 +31,7 @@ const TransactionModal = ({
   onSubmit: (tx: FinanceTransactionInput) => Promise<void>;
 }) => {
   const [form] = Form.useForm<TransactionFormValues>();
+  useResetFormOnOpen(form, state);
   const type = Form.useWatch('type', form);
   const record = state && 'record' in state ? state.record : null;
 

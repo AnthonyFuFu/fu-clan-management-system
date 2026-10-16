@@ -65,8 +65,8 @@ export function seedData(): void {
   insertBranch.free();
 
   const insertMember = db().prepare(`
-    INSERT INTO members (id, name, gender, birthday, parent_id, phone_no, cellphone, job, spouse_name, generation)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO members (id, name, gender, birthday, parent_id, phone_no, cellphone, job, spouse_name, generation, deceased)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   MEMBER_SEED.forEach((member, index) => {
@@ -89,6 +89,8 @@ export function seedData(): void {
       job,
       member.spouseName,
       member.generation,
+      // 第 1–15 世為歷代先祖（生於百年以前），標記為已故
+      isModern ? 0 : 1,
     ]);
   });
   insertMember.free();

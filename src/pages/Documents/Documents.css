@@ -1,0 +1,10 @@
+/* Cards in the same row stretch to equal height */
+.documents-card {
+  height: 100%;
+}
+
+.documents-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

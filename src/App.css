@@ -17,3 +17,22 @@ h4,
 h5 {
     margin-bottom: 20px;
 }
+/* 各功能頁面共用：標題列（標題 + 右側操作）、表格上方的工具列 */
+.page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.page-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.page-toolbar-spacer {
+    flex: 1;
+}

@@ -115,19 +115,19 @@ export function getDues(year: number): DuesRecord[] {
 }
 
 // Roster for a new year: copy the most recent earlier roster (keeps manual additions/removals),
-// otherwise fall back to members within the dues age range that year.
+// otherwise fall back to members within the dues age range that year. Deceased members are never included.
 function defaultDuesRoster(year: number): number[] {
   const previousYear = queryScalar('SELECT MAX(year) FROM dues_payments WHERE year < ?', [year]);
   if (previousYear !== null) {
     return queryAll<{ id: number }>(
-      'SELECT member_id AS id FROM dues_payments WHERE year = ? AND member_id IN (SELECT id FROM members)',
+      'SELECT member_id AS id FROM dues_payments WHERE year = ? AND member_id IN (SELECT id FROM members WHERE deceased = 0)',
       [previousYear]
     ).map((row) => row.id);
   }
   return queryAll<{ id: number }>(
     `SELECT id FROM members
-      WHERE birthday IS NULL
-         OR (? - CAST(substr(birthday, 1, 4) AS INTEGER)) BETWEEN ? AND ?
+      WHERE deceased = 0
+        AND (birthday IS NULL OR (? - CAST(substr(birthday, 1, 4) AS INTEGER)) BETWEEN ? AND ?)
       ORDER BY generation, id`,
     [year, DUES_MIN_AGE, DUES_MAX_AGE]
   ).map((row) => row.id);
@@ -220,4 +220,32 @@ export function saveTransaction(tx: FinanceTransactionInput): void {
 
 export function deleteTransaction(id: number): void {
   db().run('DELETE FROM finance_transactions WHERE id = ?', [id]);
+}
+
+// One row per living member for the dues export — including members not on that year's roster
+// (amountDue is null for them), so the sheet answers "has every living clan member paid?".
+export interface LivingDuesStatus {
+  name: string;
+  generation: number;
+  gender: string;
+  cellphone: string | null;
+  phoneNo: string | null;
+  branchName: string | null;
+  amountDue: number | null;
+  paidDate: string | null;
+  note: string | null;
+}
+
+export function getLivingDuesStatus(year: number): LivingDuesStatus[] {
+  assertYear(year);
+  return queryAll<LivingDuesStatus>(
+    `SELECT m.name, m.generation, m.gender, m.cellphone, m.phone_no AS phoneNo, b.name AS branchName,
+            d.amount_due AS amountDue, d.paid_date AS paidDate, d.note
+       FROM members m
+       LEFT JOIN dues_payments d ON d.member_id = m.id AND d.year = ?
+       LEFT JOIN branches b ON b.id = m.branch_id
+      WHERE m.deceased = 0
+      ORDER BY m.generation, m.id`,
+    [year]
+  );
 }

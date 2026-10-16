@@ -27,7 +27,7 @@ const Finance = () => {
 
   return (
     <div>
-      <div className="finance-header">
+      <div className="page-header">
         <h1>財務管理</h1>
         <Select
           value={year}

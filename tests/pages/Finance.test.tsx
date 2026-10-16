@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App as AntdApp } from 'antd';
 import type { DuesRecord } from '@shared/types';
 import Finance from '@/pages/Finance';
+import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
 
 const YEAR = new Date().getFullYear();
 
@@ -12,12 +12,8 @@ const DUES: DuesRecord[] = [
   { id: 3, year: YEAR, memberId: 12, name: '傅宗翰', generation: 19, amountDue: 0, paidDate: null, note: '學生免繳' },
 ];
 
-function mockApi(overrides: Partial<NonNullable<Window['electronAPI']>> = {}) {
-  window.electronAPI = {
-    getDashboardStats: vi.fn(),
-    searchMembers: vi.fn().mockResolvedValue([]),
-    getFamilyTree: vi.fn(),
-    getFinanceYears: vi.fn().mockResolvedValue([YEAR]),
+function mockApi(overrides: Parameters<typeof mockElectronAPI>[0] = {}) {
+  return mockElectronAPI({
     getFinanceSummary: vi.fn().mockResolvedValue({
       year: YEAR,
       duesMemberCount: 2,
@@ -32,30 +28,13 @@ function mockApi(overrides: Partial<NonNullable<Window['electronAPI']>> = {}) {
       expenseByCategory: [],
     }),
     getDues: vi.fn().mockResolvedValue(DUES),
-    createDuesYear: vi.fn().mockResolvedValue(0),
-    addDuesMember: vi.fn(),
-    removeDues: vi.fn(),
-    setDuesPaid: vi.fn().mockResolvedValue(undefined),
-    updateDues: vi.fn(),
-    getTransactions: vi.fn().mockResolvedValue([]),
-    saveTransaction: vi.fn(),
-    deleteTransaction: vi.fn(),
     ...overrides,
-  };
-  return window.electronAPI;
+  });
 }
 
 function renderFinance() {
-  return render(
-    <AntdApp>
-      <Finance />
-    </AntdApp>
-  );
+  return renderWithAntd(<Finance />);
 }
-
-afterEach(() => {
-  delete window.electronAPI;
-});
 
 test('shows a hint when not running inside Electron', () => {
   renderFinance();

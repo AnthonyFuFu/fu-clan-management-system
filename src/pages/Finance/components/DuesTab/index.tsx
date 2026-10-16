@@ -148,7 +148,7 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
 
   return (
     <div>
-      <div className="finance-toolbar">
+      <div className="page-toolbar">
         <Segmented<StatusFilter>
           value={statusFilter}
           onChange={setStatusFilter}
@@ -164,7 +164,7 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
           onChange={(e) => setKeyword(e.target.value.trim())}
           style={{ width: 200 }}
         />
-        <div className="finance-toolbar-spacer" />
+        <div className="page-toolbar-spacer" />
         <Button
           icon={<CheckOutlined />}
           disabled={unpaidSelected.length === 0}

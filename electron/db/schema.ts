@@ -1,4 +1,4 @@
-import { db, getMeta, queryOne, queryScalar, saveDatabase, setMeta } from './connection';
+import { db, getMeta, queryAll, queryOne, queryScalar, saveDatabase, setMeta } from './connection';
 import { seedData, seedFinance } from './seed';
 
 // Bump this whenever the members schema/seed data shape changes — triggers a reseed on existing installs.
@@ -28,7 +28,9 @@ export function createSchema(): void {
       job TEXT,
       spouse_name TEXT,
       generation INTEGER NOT NULL,
-      branch_id INTEGER REFERENCES branches(id)
+      branch_id INTEGER REFERENCES branches(id),
+      -- 1 = 已故：不列入會費應繳名單，也不出現在「在世者繳費名單」
+      deceased INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +57,29 @@ export function createSchema(): void {
       tx_date TEXT NOT NULL,
       note TEXT
     );
+    -- 上傳的文件：檔案本身存在 userData/documents/<stored_name>，這裡只存中繼資料
+    CREATE TABLE IF NOT EXISTS documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      file_name TEXT NOT NULL,
+      stored_name TEXT NOT NULL UNIQUE,
+      size INTEGER NOT NULL,
+      uploaded_at TEXT NOT NULL
+    );
   `);
+}
+
+// Columns added to members after the first release. Existing installs get them here; new installs
+// already have them from createSchema().
+export function migrateMemberColumns(): void {
+  const columns = queryAll<{ name: string }>('PRAGMA table_info(members)').map((column) => column.name);
+  if (!columns.includes('deceased')) {
+    db().run('ALTER TABLE members ADD COLUMN deceased INTEGER NOT NULL DEFAULT 0;');
+    // No death records existed before this column — treat anyone born 100+ years ago as deceased.
+    db().run('UPDATE members SET deceased = 1 WHERE CAST(substr(birthday, 1, 4) AS INTEGER) <= ?;', [
+      new Date().getFullYear() - 100,
+    ]);
+    saveDatabase();
+  }
 }
 
 // Existing installs may have the old (pre-genealogy) members schema — rebuild members/branches on version bump.

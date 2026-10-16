@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form, Input, InputNumber, Modal } from 'antd';
 import type { DuesRecord } from '@shared/types';
+import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
 
 const EditDuesModal = ({
   record,
@@ -12,6 +13,7 @@ const EditDuesModal = ({
   onSubmit: (amount: number, note: string | null) => Promise<void>;
 }) => {
   const [form] = Form.useForm<{ amount: number; note?: string }>();
+  useResetFormOnOpen(form, record);
   return (
     <Modal
       title={record ? `編輯：${record.name}` : ''}

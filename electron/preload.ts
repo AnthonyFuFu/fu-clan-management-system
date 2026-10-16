@@ -10,6 +10,10 @@ const electronAPI: ElectronAPI = {
   getDashboardStats: () => invoke('getDashboardStats'),
 
   searchMembers: (keyword) => invoke('searchMembers', keyword),
+  listMembers: (query) => invoke('listMembers', query),
+  createMember: (input) => invoke('createMember', input),
+  updateMember: (id, input) => invoke('updateMember', id, input),
+  getBranches: () => invoke('getBranches'),
   getFamilyTree: (memberId) => invoke('getFamilyTree', memberId),
 
   getFinanceYears: () => invoke('getFinanceYears'),
@@ -23,6 +27,18 @@ const electronAPI: ElectronAPI = {
   getTransactions: (year) => invoke('getTransactions', year),
   saveTransaction: (tx) => invoke('saveTransaction', tx),
   deleteTransaction: (id) => invoke('deleteTransaction', id),
+
+  listDocuments: () => invoke('listDocuments'),
+  uploadDocuments: () => invoke('uploadDocuments'),
+  downloadDocument: (id) => invoke('downloadDocument', id),
+  openDocument: (id) => invoke('openDocument', id),
+  deleteDocument: (id) => invoke('deleteDocument', id),
+
+  exportDuesStatus: (year) => invoke('exportDuesStatus', year),
+  exportTransactions: (year) => invoke('exportTransactions', year),
+  downloadMemberImportTemplate: () => invoke('downloadMemberImportTemplate'),
+  previewMemberImport: () => invoke('previewMemberImport'),
+  confirmMemberImport: (token) => invoke('confirmMemberImport', token),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

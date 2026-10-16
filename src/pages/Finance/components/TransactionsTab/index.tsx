@@ -102,7 +102,7 @@ const TransactionsTab = ({ year, version, onChanged }: TransactionsTabProps) => 
 
   return (
     <div>
-      <div className="finance-toolbar">
+      <div className="page-toolbar">
         <Segmented<TypeFilter>
           value={typeFilter}
           onChange={setTypeFilter}
@@ -113,7 +113,7 @@ const TransactionsTab = ({ year, version, onChanged }: TransactionsTabProps) => 
           ]}
         />
         <Text type="secondary">宗親會費請在「會費收繳」登記，不需重複記在這裡。</Text>
-        <div className="finance-toolbar-spacer" />
+        <div className="page-toolbar-spacer" />
         <Button icon={<PlusOutlined />} onClick={() => setEditor({ type: 'income' })}>
           新增收入
         </Button>

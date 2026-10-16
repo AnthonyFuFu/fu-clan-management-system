@@ -1,6 +1,6 @@
 import path from 'path';
 import { openDatabase, saveDatabase, setMeta } from './connection';
-import { createSchema, migrateFinanceIfNeeded, migrateMembersIfNeeded, SEED_VERSION } from './schema';
+import { createSchema, migrateFinanceIfNeeded, migrateMemberColumns, migrateMembersIfNeeded, SEED_VERSION } from './schema';
 import { seedData } from './seed';
 
 export async function initDatabase(userDataPath: string): Promise<void> {
@@ -13,12 +13,14 @@ export async function initDatabase(userDataPath: string): Promise<void> {
   } else {
     migrateMembersIfNeeded();
   }
+  migrateMemberColumns();
   migrateFinanceIfNeeded();
 }
 
 export { saveDatabase } from './connection';
 export { getDashboardStats } from './dashboard';
-export { searchMembers, getFamilyTree } from './members';
+export { searchMembers, listMembers, createMember, updateMember, getBranches } from './members';
+export { getFamilyTree } from './familyTree';
 export {
   getFinanceYears,
   getFinanceSummary,
