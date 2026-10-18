@@ -2,7 +2,7 @@ import React from 'react';
 import { Form, InputNumber, Modal } from 'antd';
 import { DEFAULT_DUES_AMOUNT } from '@shared/finance';
 import MemberSelect from '@/components/MemberSelect';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 
 const AddMemberModal = ({
   year,
@@ -18,7 +18,6 @@ const AddMemberModal = ({
   onSubmit: (memberId: number, amount: number) => Promise<void>;
 }) => {
   const [form] = Form.useForm<{ memberId: number; amount: number }>();
-  useResetFormOnOpen(form, open);
   return (
     <Modal title={`加入 ${year} 年度應繳名單`} open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnHidden>
       <Form
@@ -38,4 +37,5 @@ const AddMemberModal = ({
   );
 };
 
-export default AddMemberModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(AddMemberModal, (props) => props.open);

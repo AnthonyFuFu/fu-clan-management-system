@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, InputNumber, Modal, Typography } from 'antd';
 import { DEFAULT_DUES_AMOUNT, DUES_MAX_AGE, DUES_MIN_AGE } from '@shared/finance';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 
 const { Paragraph } = Typography;
 
@@ -17,7 +17,6 @@ const CreateYearModal = ({
   onSubmit: (amount: number) => Promise<void>;
 }) => {
   const [form] = Form.useForm<{ amount: number }>();
-  useResetFormOnOpen(form, open);
   return (
     <Modal
       title={`開立 ${year} 年度會費`}
@@ -39,4 +38,5 @@ const CreateYearModal = ({
   );
 };
 
-export default CreateYearModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(CreateYearModal, (props) => props.open);

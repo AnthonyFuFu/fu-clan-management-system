@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Input, InputNumber, Modal } from 'antd';
 import type { DuesRecord } from '@shared/types';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 
 const EditDuesModal = ({
   record,
@@ -13,7 +13,6 @@ const EditDuesModal = ({
   onSubmit: (amount: number, note: string | null) => Promise<void>;
 }) => {
   const [form] = Form.useForm<{ amount: number; note?: string }>();
-  useResetFormOnOpen(form, record);
   return (
     <Modal
       title={record ? `編輯：${record.name}` : ''}
@@ -41,4 +40,5 @@ const EditDuesModal = ({
   );
 };
 
-export default EditDuesModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(EditDuesModal, (props) => props.record);

@@ -59,7 +59,9 @@ test('registers a payment for an unpaid member', async () => {
 
   const row = (await screen.findByText('傅俊宏')).closest('tr')!;
   await userEvent.click(within(row).getByRole('button', { name: '登記繳費' }));
-  await userEvent.click(await screen.findByRole('button', { name: /OK|確\s*定/ }));
+  // 只在對話框裡找按鈕：整頁的會費表格有很多按鈕，在整頁上以名稱找按鈕非常慢
+  const dialog = await screen.findByRole('dialog');
+  await userEvent.click(within(dialog).getByRole('button', { name: /OK|確\s*定/ }));
 
   expect(api.setDuesPaid).toHaveBeenCalledWith([2], expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
 });

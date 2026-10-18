@@ -1,5 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
+import { StyleProvider } from '@ant-design/cssinjs';
 import { App as AntdApp } from 'antd';
 import { Mocked } from 'vitest';
 import type { ElectronAPI } from '@shared/ipc';
@@ -64,9 +65,19 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
   return api;
 }
 
+// antd 的 CSS-in-JS 樣式（約 500 KB）改寫進一個不在畫面上的容器。
+// jsdom 每次 getComputedStyle 都會重新套用頁面上所有樣式，而 testing-library 的 getByRole
+// 會對元素與所有上層元素呼叫它來判斷是否可見——樣式留在頁面上時，一次 getByRole 就要 1 秒以上，
+// 在較慢的機器（例如 CI）上會超過 5 秒的測試時限。測試只驗證行為，不需要這些樣式。
+const detachedStyleContainer = document.createElement('div');
+
 // 頁面用到 App.useApp()（提示訊息），必須包在 antd 的 <App> 裡
 export function renderWithAntd(ui: React.ReactElement) {
-  return render(<AntdApp>{ui}</AntdApp>);
+  return render(
+    <StyleProvider container={detachedStyleContainer}>
+      <AntdApp>{ui}</AntdApp>
+    </StyleProvider>
+  );
 }
 
 afterEach(() => {

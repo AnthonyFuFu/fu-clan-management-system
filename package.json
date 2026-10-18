@@ -30,6 +30,7 @@
         "electron:build": "npm run build && npm run build:electron && electron-builder --config electron-builder.js"
     },
     "devDependencies": {
+        "@ant-design/cssinjs": "^2.1.2",
         "@testing-library/dom": "^10.4.2",
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/react": "^16.3.3",

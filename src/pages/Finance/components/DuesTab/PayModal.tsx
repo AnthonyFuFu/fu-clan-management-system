@@ -2,7 +2,7 @@ import React from 'react';
 import { DatePicker, Form, Modal } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { DATE_FORMAT } from '@/utils/format';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 
 const PayModal = ({
   count,
@@ -16,7 +16,6 @@ const PayModal = ({
   onSubmit: (date: string) => Promise<void>;
 }) => {
   const [form] = Form.useForm<{ date: Dayjs }>();
-  useResetFormOnOpen(form, open);
   return (
     <Modal title={`登記繳費（${count} 人）`} open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnHidden>
       <Form form={form} layout="vertical" initialValues={{ date: dayjs() }} onFinish={(v) => onSubmit(v.date.format(DATE_FORMAT))}>
@@ -28,4 +27,5 @@ const PayModal = ({
   );
 };
 
-export default PayModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(PayModal, (props) => props.open);

@@ -3,7 +3,7 @@ import { Col, DatePicker, Form, Input, InputNumber, Modal, Radio, Row, Select, S
 import dayjs, { Dayjs } from 'dayjs';
 import type { Branch, Gender, Member, MemberInput, MemberSummary } from '@shared/types';
 import MemberSelect from '@/components/MemberSelect';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 import { GENDER_LABEL } from '../constants';
 
@@ -69,7 +69,6 @@ function initialParent(state: NonNullable<MemberFormState>): MemberSummary | nul
 
 const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModalProps) => {
   const [form] = Form.useForm<MemberFormValues>();
-  useResetFormOnOpen(form, state);
   const parentId = Form.useWatch('parentId', form);
   const [parentGeneration, setParentGeneration] = useState<number | null>(null);
 
@@ -214,4 +213,5 @@ const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModal
   );
 };
 
-export default MemberFormModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(MemberFormModal, (props) => props.state);

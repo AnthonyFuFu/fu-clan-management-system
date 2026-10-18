@@ -2,7 +2,7 @@ import React from 'react';
 import { Col, DatePicker, Form, Input, Modal, Row, TimePicker } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import type { ClanEvent, ClanEventInput } from '@shared/types';
-import { useResetFormOnOpen } from '@/hooks/useResetFormOnOpen';
+import { remountOnOpen } from '@/utils/remountOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 
 const TIME_FORMAT = 'HH:mm';
@@ -44,7 +44,6 @@ function initialValues(state: NonNullable<EventFormState>): Partial<EventFormVal
 
 const EventFormModal = ({ state, onClose, onSubmit }: EventFormModalProps) => {
   const [form] = Form.useForm<EventFormValues>();
-  useResetFormOnOpen(form, state);
   const editing = state?.mode === 'edit' ? state.event : null;
 
   return (
@@ -123,4 +122,5 @@ const EventFormModal = ({ state, onClose, onSubmit }: EventFormModalProps) => {
   );
 };
 
-export default EventFormModal;
+// 每次開啟都用全新的表單，避免殘留上一次的內容（見 remountOnOpen）
+export default remountOnOpen(EventFormModal, (props) => props.state);

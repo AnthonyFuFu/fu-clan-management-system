@@ -50,8 +50,8 @@
 ├── src/                       # 畫面（React）
 │   ├── App.tsx                # 路由
 │   ├── components/            # 跨頁面共用元件（MainLayout、EventReminder、MemberSelect、DesktopOnlyNotice）
-│   ├── hooks/                 # 共用 hooks（useAsyncAction：操作提示；useResetFormOnOpen：對話框表單重設）
-│   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息）
+│   ├── hooks/                 # 共用 hooks（useAsyncAction：操作成功 / 失敗提示）
+│   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息；remountOnOpen：對話框每次開啟都用全新表單）
 │   ├── types/                 # 全域型別宣告（window.electronAPI）
 │   ├── assets/                # 應用程式圖示（打包時使用）
 │   └── pages/                 # 每個功能頁面一個資料夾
@@ -80,7 +80,7 @@
 
 1. 在 `src/pages/<功能名稱>/` 建立資料夾，進入點為 `index.tsx`；頁面專用的子元件放在該資料夾的 `components/`，常數放 `constants.ts`。
 2. 兩個以上頁面都會用到的元件、hook、工具函式，才放到 `src/components/`、`src/hooks/`、`src/utils/`。
-   對話框裡的表單請呼叫 `useResetFormOnOpen(form, ...)`，否則上一次輸入的內容會殘留到下一次開啟。
+   含表單的對話框請用 `export default remountOnOpen(MyModal, (props) => props.open)` 匯出，否則上一次輸入的內容會殘留到下一次開啟。
 3. 需要讀寫資料庫時：
    - 在 `shared/types.ts` 加資料型別、在 `shared/ipc.ts` 的 `ElectronAPI` 加方法；
    - 在 `electron/db/` 實作查詢，並從 `electron/db/index.ts` 匯出；
