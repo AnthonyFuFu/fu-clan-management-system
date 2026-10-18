@@ -4,14 +4,53 @@ import { StyleProvider } from '@ant-design/cssinjs';
 import { App as AntdApp } from 'antd';
 import { Mocked } from 'vitest';
 import type { ElectronAPI } from '@shared/ipc';
+import type { DashboardStats, FinanceSummary } from '@shared/types';
 
 const YEAR = new Date().getFullYear();
+
+export const EMPTY_FINANCE_SUMMARY: FinanceSummary = {
+  year: YEAR,
+  duesMemberCount: 0,
+  duesPaidCount: 0,
+  duesExpected: 0,
+  duesCollected: 0,
+  otherIncome: 0,
+  expense: 0,
+  yearBalance: 0,
+  closingBalance: 0,
+  incomeByCategory: [],
+  expenseByCategory: [],
+};
+
+export const EMPTY_DASHBOARD_STATS: DashboardStats = {
+  memberCount: 0,
+  livingCount: 0,
+  deceasedCount: 0,
+  maleCount: 0,
+  femaleCount: 0,
+  branchCount: 0,
+  generationCounts: [],
+  branchCounts: [],
+  ageGroups: [],
+  missingBirthdayCount: 0,
+  missingContactCount: 0,
+  upcomingBirthdays: [],
+  monthlyEventCount: 0,
+  yearEventCount: 0,
+  upcomingEvents: [],
+  financeTotal: 0,
+  finance: EMPTY_FINANCE_SUMMARY,
+  recentTransactions: [],
+  documentCount: 0,
+  documentTotalSize: 0,
+  latestDocument: null,
+};
 
 // 以「什麼資料都沒有」為預設的假 window.electronAPI；各測試只覆寫自己關心的方法。
 // ElectronAPI 新增方法時，這裡少了會編譯失敗，提醒補上預設值。
 export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<ElectronAPI> {
   const api: Mocked<ElectronAPI> = {
-    getDashboardStats: vi.fn().mockResolvedValue({ memberCount: 0, branchCount: 0, monthlyEventCount: 0, financeTotal: 0 }),
+    getDashboardStats: vi.fn().mockResolvedValue(EMPTY_DASHBOARD_STATS),
 
     searchMembers: vi.fn().mockResolvedValue([]),
     listMembers: vi.fn().mockResolvedValue({ rows: [], total: 0, generations: [] }),
@@ -21,19 +60,7 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
     getFamilyTree: vi.fn().mockResolvedValue(null),
 
     getFinanceYears: vi.fn().mockResolvedValue([YEAR]),
-    getFinanceSummary: vi.fn().mockResolvedValue({
-      year: YEAR,
-      duesMemberCount: 0,
-      duesPaidCount: 0,
-      duesExpected: 0,
-      duesCollected: 0,
-      otherIncome: 0,
-      expense: 0,
-      yearBalance: 0,
-      closingBalance: 0,
-      incomeByCategory: [],
-      expenseByCategory: [],
-    }),
+    getFinanceSummary: vi.fn().mockResolvedValue(EMPTY_FINANCE_SUMMARY),
     getDues: vi.fn().mockResolvedValue([]),
     createDuesYear: vi.fn().mockResolvedValue(0),
     addDuesMember: vi.fn().mockResolvedValue(undefined),

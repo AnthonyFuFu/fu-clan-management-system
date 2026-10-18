@@ -2,6 +2,9 @@ import type { ClanEvent } from './types';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+// 首頁儀表板的「近期活動」「近期壽辰」看幾天內
+export const DASHBOARD_UPCOMING_DAYS = 30;
+
 // 本地日期的 YYYY-MM-DD
 export function toDateString(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
