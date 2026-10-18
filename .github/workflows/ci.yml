@@ -94,8 +94,10 @@ jobs:
       - name: Build Electron main process
         run: npm run build:electron
 
+      # 設定檔刻意不叫 electron-builder.js：Windows 會優先執行目前資料夾中與指令同名的 .js 檔，
+      # 導致 electron-builder 根本沒有執行、步驟卻顯示成功
       - name: Package installer
-        run: npx electron-builder --config electron-builder.js --publish never
+        run: npx electron-builder --config electron-builder.config.js --publish never
         env:
           # CI 上沒有 Apple 簽章憑證：不簽章（使用者第一次開啟需右鍵 →「打開」）
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'

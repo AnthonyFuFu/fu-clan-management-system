@@ -75,7 +75,7 @@
 ├── tsconfig.electron.json     # 主程序 (main.ts、electron/、shared/) 的 TypeScript 設定
 ├── scripts/
 │   └── generate-icons.js      # 由 src/assets/icon.svg 產生 icon.png / .ico / .icns（npm run icons）
-└── electron-builder.js        # electron-builder 打包設定
+└── electron-builder.config.js # electron-builder 打包設定（不能命名為 electron-builder.js：Windows 會把它當成 electron-builder 指令執行）
 ```
 
 ### 新增功能頁面的慣例
@@ -189,7 +189,7 @@ npm run electron:build
 這個指令會依序：
 1. `npm run build` — 編譯前端到 `build/`
 2. `npm run build:electron` — 編譯 Electron 主程序到 `dist-electron/`
-3. `electron-builder --config electron-builder.js` — 依照 [electron-builder.js](electron-builder.js) 設定打包
+3. `electron-builder --config electron-builder.config.js` — 依照 [electron-builder.config.js](electron-builder.config.js) 設定打包
 
 打包完成後，安裝檔會輸出到 **`dist/`** 資料夾。
 
@@ -197,7 +197,7 @@ npm run electron:build
 
 ```bash
 npm run build && npm run build:electron
-npx electron-builder --config electron-builder.js --dir
+npx electron-builder --config electron-builder.config.js --dir
 ```
 
 ### 各平台安裝檔與安裝方式
