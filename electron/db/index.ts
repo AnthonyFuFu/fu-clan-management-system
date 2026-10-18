@@ -30,6 +30,7 @@ export { getDashboardStats } from './dashboard';
 export { searchMembers, listMembers, createMember, updateMember, getBranches } from './members';
 export { getFamilyTree } from './familyTree';
 export { listEvents, saveEvent, deleteEvent } from './events';
+export { getSettings, updateSettings } from './settings';
 export {
   getFinanceYears,
   getFinanceSummary,

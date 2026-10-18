@@ -1,9 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { REMINDER_DAYS, toDateString, upcomingEvents } from '@shared/events';
+import { toDateString, upcomingEvents } from '@shared/events';
 import type { ClanEvent } from '@shared/types';
+import { useSettings } from '@/components/SettingsProvider';
 
 interface UpcomingEventsValue {
-  // 今天到 REMINDER_DAYS 天後、還沒結束的活動
+  // 今天到「提醒天數」（系統設定）天後、還沒結束的活動
   events: ClanEvent[];
   // 活動有新增、修改、刪除後呼叫，讓提醒立即更新
   refresh: () => void;
@@ -16,14 +17,20 @@ const REFRESH_INTERVAL = 10 * 60 * 1000;
 
 export const UpcomingEventsProvider = ({ children }: { children: React.ReactNode }) => {
   const [events, setEvents] = useState<ClanEvent[]>([]);
+  const { settings, loaded } = useSettings();
+  const { reminderDays } = settings;
 
+  // 提醒天數改變時 refresh 會換新，下面的 effect 隨即重新查詢
   const refresh = useCallback(() => {
     const api = window.electronAPI;
-    if (!api) return;
+    // 等讀到使用者設定的提醒天數再查詢，避免開啟時先用預設天數跳出不該出現的提醒
+    if (!api || !loaded) return;
     const now = new Date();
-    const last = new Date(now.getFullYear(), now.getMonth(), now.getDate() + REMINDER_DAYS);
-    api.listEvents(toDateString(now), toDateString(last)).then((list) => setEvents(upcomingEvents(list, new Date())));
-  }, []);
+    const last = new Date(now.getFullYear(), now.getMonth(), now.getDate() + reminderDays);
+    api
+      .listEvents(toDateString(now), toDateString(last))
+      .then((list) => setEvents(upcomingEvents(list, new Date(), reminderDays)));
+  }, [reminderDays, loaded]);
 
   useEffect(() => {
     refresh();

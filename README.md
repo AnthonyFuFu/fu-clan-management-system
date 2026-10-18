@@ -25,7 +25,8 @@
 ├── shared/                    # 主程序與畫面共用（兩邊都 import 這裡，不要各寫一份）
 │   ├── types.ts               # 資料型別（宗親、世系圖、財務…）
 │   ├── ipc.ts                 # window.electronAPI 介面；方法名稱就是 IPC channel 名稱
-│   ├── events.ts              # 活動提醒規則（3 天內、今天已結束不提醒）
+│   ├── events.ts              # 活動提醒規則（提醒天數內、今天已結束不提醒）
+│   ├── settings.ts            # 系統設定的選項與預設值（文字大小、提醒天數）
 │   ├── finance.ts             # 財務規則常數（預設會費、收支類別）
 │   └── labels.ts              # 畫面與 Excel 共用的顯示文字（性別…）
 ├── electron/                  # 主程序（Node.js 環境）
@@ -44,12 +45,13 @@
 │       ├── members.ts         # 成員名單、新增 / 修改、搜尋
 │       ├── familyTree.ts      # 世系圖
 │       ├── events.ts          # 活動與聚會
+│       ├── settings.ts        # 系統設定（存在 meta 資料表）
 │       ├── documents.ts       # 上傳文件的中繼資料
 │       ├── finance.ts         # 會費名單、收支明細、統計
 │       └── dashboard.ts       # 首頁儀表板統計
 ├── src/                       # 畫面（React）
 │   ├── App.tsx                # 路由
-│   ├── components/            # 跨頁面共用元件（MainLayout、EventReminder、MemberSelect、DesktopOnlyNotice）
+│   ├── components/            # 跨頁面共用元件（MainLayout、SettingsProvider、EventReminder、MemberSelect、DesktopOnlyNotice）
 │   ├── hooks/                 # 共用 hooks（useAsyncAction：操作成功 / 失敗提示）
 │   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息；remountOnOpen：對話框每次開啟都用全新表單）
 │   ├── types/                 # 全域型別宣告（window.electronAPI）
@@ -58,6 +60,7 @@
 │       ├── Dashboard/
 │       ├── Members/           # index.tsx + constants.ts + components/MemberFormModal.tsx
 │       ├── Events/            # index.tsx（行事曆）+ components/（EventFormModal、DayPanel、UpcomingPanel）
+│       ├── Settings/          # 系統設定（文字大小、提醒天數）
 │       ├── Documents/         # index.tsx + components/（FilesTab、ExcelTab、ImportPreviewModal）
 │       ├── FamilyTree/        # index.tsx + layout.ts（座標計算）+ theme.ts（配色）+ components/
 │       └── Finance/           # index.tsx + constants.ts + components/（Overview、DuesTab、TransactionsTab）
@@ -240,6 +243,8 @@ npx electron-builder --config electron-builder.config.js --dir
 | Windows | `%APPDATA%\fu-clan-management-system\clan.db` |
 | macOS | `~/Library/Application Support/fu-clan-management-system/clan.db` |
 | Linux | `~/.config/fu-clan-management-system/clan.db` |
+
+「系統設定」（文字大小、活動提醒天數）也存在 `clan.db` 中，會跟著資料一起備份、搬移。
 
 上傳的文件存在同一個資料夾底下的 `documents/`（檔名是系統產生的亂碼，原始檔名記在資料庫中）。
 

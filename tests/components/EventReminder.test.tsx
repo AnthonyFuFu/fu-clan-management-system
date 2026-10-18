@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import type { ClanEvent } from '@shared/types';
 import EventReminder from '@/components/EventReminder';
 import { UpcomingEventsProvider } from '@/components/EventReminder/UpcomingEventsContext';
+import { SettingsProvider } from '@/components/SettingsProvider';
 import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
 
 const EVENTS: ClanEvent[] = [
@@ -43,4 +44,27 @@ test('pops up the reminder list once when there are events within 3 days, and ke
   await userEvent.click(within(dialog).getByRole('button', { name: /知道了/ }));
   const bell = screen.getByRole('button', { name: '活動提醒' });
   expect(within(bell).getByText('2')).toBeInTheDocument();
+});
+
+test('uses the reminder days from the settings, and waits for them before asking', async () => {
+  const api = mockElectronAPI({
+    listEvents: vi.fn().mockResolvedValue(EVENTS),
+    getSettings: vi.fn().mockResolvedValue({ fontSize: 'standard', reminderDays: 1 }),
+  });
+  renderWithAntd(
+    <HashRouter>
+      <SettingsProvider>
+        <UpcomingEventsProvider>
+          <EventReminder />
+        </UpcomingEventsProvider>
+      </SettingsProvider>
+    </HashRouter>
+  );
+
+  const bell = screen.getByRole('button', { name: '活動提醒' });
+  // 只提醒今天的理監事會議；後天的秋季祭祖不在 1 天的範圍內
+  expect(await within(bell).findByText('1')).toBeInTheDocument();
+  // 沒有先用預設的 3 天查詢
+  expect(api.listEvents).toHaveBeenCalledTimes(1);
+  expect(api.listEvents).toHaveBeenCalledWith('2026-10-18', '2026-10-19');
 });

@@ -211,3 +211,15 @@ export interface ClanEvent {
 
 // 沒有 id 時新增，有 id 時更新
 export type ClanEventInput = Omit<ClanEvent, 'id'> & { id?: number };
+
+// ---------------------------------------------------------------------------
+// 系統設定
+// ---------------------------------------------------------------------------
+
+export type FontSize = 'standard' | 'large' | 'larger' | 'largest';
+
+export interface AppSettings {
+  fontSize: FontSize;
+  // 活動前幾天開始提醒（含當天）
+  reminderDays: number;
+}

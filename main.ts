@@ -1,7 +1,8 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
-import { initDatabase, saveDatabase } from './electron/db';
+import { getSettings, initDatabase, saveDatabase } from './electron/db';
 import { registerIpcHandlers } from './electron/ipc';
+import { applyZoom } from './electron/services/zoom';
 
 // 由 npm run electron:dev 設定；有值時載入 Vite 開發伺服器，否則載入編譯好的 build/
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -14,6 +15,10 @@ function createWindow(): void {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        // 文字放大後版面需要更多空間：限制最小尺寸，並在開啟時放到最大（見下方 maximize）
+        minWidth: 1024,
+        minHeight: 700,
+        show: false,
         webPreferences: {
             preload: path.join(__dirname, 'electron/preload.js'),
             nodeIntegration: false,
@@ -34,6 +39,17 @@ function createWindow(): void {
     if (devServerUrl) {
         mainWindow.webContents.openDevTools();
     }
+
+    // 套用「系統設定」的文字大小（每次載入完成都套用，重新整理後也不會跑掉）
+    mainWindow.webContents.on('did-finish-load', () => {
+        if (mainWindow) applyZoom(getSettings(), [mainWindow]);
+    });
+
+    // 開啟時視窗放到最大，放大文字後也有足夠空間；準備好才顯示，避免先閃一個小視窗
+    mainWindow.once('ready-to-show', () => {
+        mainWindow?.maximize();
+        mainWindow?.show();
+    });
 
     // 移除視窗的預設選單
     mainWindow.setMenu(null);

@@ -20,9 +20,15 @@ h5 {
 /* 各功能頁面共用：標題列（標題 + 右側操作）、表格上方的工具列 */
 .page-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
-    gap: 16px;
+    gap: 0 16px;
+}
+
+/* 標題不換行；旁邊的說明文字空間不夠時改排到下一行（例如文字放大時） */
+.page-header h1 {
+    white-space: nowrap;
 }
 
 .page-toolbar {

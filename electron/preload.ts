@@ -43,6 +43,9 @@ const electronAPI: ElectronAPI = {
   listEvents: (from, to) => invoke('listEvents', from, to),
   saveEvent: (input) => invoke('saveEvent', input),
   deleteEvent: (id) => invoke('deleteEvent', id),
+
+  getSettings: () => invoke('getSettings'),
+  updateSettings: (patch) => invoke('updateSettings', patch),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

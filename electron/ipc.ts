@@ -4,6 +4,7 @@ import * as database from './db';
 import { listDocuments } from './db/documents';
 import * as documents from './services/documents';
 import * as excel from './services/excelTransfer';
+import { applyZoom } from './services/zoom';
 
 type Handler<K extends IpcChannel> = (
   ...args: Parameters<ElectronAPI[K]>
@@ -59,4 +60,11 @@ export function registerIpcHandlers(): void {
   handle('listEvents', database.listEvents);
   handleWrite('saveEvent', database.saveEvent);
   handleWrite('deleteEvent', database.deleteEvent);
+
+  handle('getSettings', database.getSettings);
+  handleWrite('updateSettings', (patch) => {
+    const settings = database.updateSettings(patch);
+    applyZoom(settings);
+    return settings;
+  });
 }

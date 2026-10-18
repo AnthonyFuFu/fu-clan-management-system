@@ -1,0 +1,46 @@
+.font-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.font-size-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 140px;
+  min-height: 110px;
+  padding: 16px 20px;
+  border: 2px solid #d9d9d9;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.font-size-option:hover {
+  border-color: #4096ff;
+}
+
+.font-size-option:focus-visible {
+  outline: 3px solid #91caff;
+  outline-offset: 2px;
+}
+
+.font-size-option--selected {
+  border-color: #1677ff;
+  background: #e6f4ff;
+  cursor: default;
+}
+
+.font-size-option-sample {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.font-size-option-label {
+  font-size: 14px;
+}

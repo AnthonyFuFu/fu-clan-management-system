@@ -59,6 +59,9 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
     listEvents: vi.fn().mockResolvedValue([]),
     saveEvent: vi.fn().mockResolvedValue(1),
     deleteEvent: vi.fn().mockResolvedValue(undefined),
+
+    getSettings: vi.fn().mockResolvedValue({ fontSize: 'standard', reminderDays: 3 }),
+    updateSettings: vi.fn().mockImplementation(async (patch) => ({ fontSize: 'standard', reminderDays: 3, ...patch })),
   };
   Object.assign(api, overrides);
   window.electronAPI = api;

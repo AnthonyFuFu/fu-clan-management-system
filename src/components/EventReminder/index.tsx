@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button, Empty, Modal, Popover, Tooltip } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { REMINDER_DAYS } from '@shared/events';
+import { useSettings } from '@/components/SettingsProvider';
 import UpcomingEventList from './UpcomingEventList';
 import { useUpcomingEvents } from './UpcomingEventsContext';
 import './EventReminder.css';
@@ -13,6 +13,8 @@ let shownThisSession = false;
 // 頂端列的鈴鐺（顯示近期活動數）＋開啟程式時的提醒視窗
 const EventReminder = () => {
   const { events } = useUpcomingEvents();
+  const { reminderDays } = useSettings().settings;
+  const rangeLabel = reminderDays === 0 ? '今天' : `${reminderDays} 天內`;
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -37,13 +39,13 @@ const EventReminder = () => {
         onOpenChange={setPopoverOpen}
         trigger="click"
         placement="bottomRight"
-        title={`${REMINDER_DAYS} 天內的活動`}
+        title={`${rangeLabel}的活動`}
         content={
           <div className="event-reminder-popover">
             {events.length > 0 ? (
               <UpcomingEventList events={events} />
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`${REMINDER_DAYS} 天內沒有活動`} />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`${rangeLabel}沒有活動`} />
             )}
             <Button type="link" onClick={goToCalendar} style={{ paddingInline: 0 }}>
               查看行事曆

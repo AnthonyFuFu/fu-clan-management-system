@@ -27,7 +27,15 @@ test('reminds from 3 days before until the event is over', () => {
     event(6, '2026-10-21', '18:00'), // 3 天後
     event(7, '2026-10-22'), // 4 天後，還不用提醒
   ];
-  expect(upcomingEvents(events, NOW).map((e) => e.id)).toEqual([5, 4, 6]);
+  expect(upcomingEvents(events, NOW, 3).map((e) => e.id)).toEqual([5, 4, 6]);
+});
+
+test('the reminder window follows the configured number of days', () => {
+  const events = [event(1, '2026-10-18'), event(2, '2026-10-19'), event(3, '2026-10-25'), event(4, '2026-10-26')];
+  // 0 天：只提醒當天
+  expect(upcomingEvents(events, NOW, 0).map((e) => e.id)).toEqual([1]);
+  expect(upcomingEvents(events, NOW, 1).map((e) => e.id)).toEqual([1, 2]);
+  expect(upcomingEvents(events, NOW, 7).map((e) => e.id)).toEqual([1, 2, 3]);
 });
 
 test('labels relative days', () => {

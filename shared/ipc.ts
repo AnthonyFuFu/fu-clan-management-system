@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   Branch,
   ClanEvent,
   ClanEventInput,
@@ -69,6 +70,10 @@ export interface ElectronAPI {
   // 回傳活動 id
   saveEvent(input: ClanEventInput): Promise<number>;
   deleteEvent(id: number): Promise<void>;
+
+  // 系統設定：更新後回傳完整的最新設定；文字大小會立即套用到視窗
+  getSettings(): Promise<AppSettings>;
+  updateSettings(patch: Partial<AppSettings>): Promise<AppSettings>;
 }
 
 export type IpcChannel = keyof ElectronAPI;

@@ -6,6 +6,7 @@ import { toDateString } from '@shared/events';
 import type { ClanEvent, ClanEventInput } from '@shared/types';
 import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
 import { useUpcomingEvents } from '@/components/EventReminder/UpcomingEventsContext';
+import { useSettings } from '@/components/SettingsProvider';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { DATE_FORMAT, formatEventTime } from '@/utils/format';
 import DayPanel from './components/DayPanel';
@@ -27,6 +28,7 @@ const Events = () => {
   const api = window.electronAPI;
   const runAction = useAsyncAction();
   const { refresh: refreshReminders } = useUpcomingEvents();
+  const { reminderDays } = useSettings().settings;
   const [panelDate, setPanelDate] = useState<Dayjs>(dayjs());
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [events, setEvents] = useState<ClanEvent[]>([]);
@@ -118,7 +120,10 @@ const Events = () => {
     <div>
       <div className="page-header">
         <h1>活動與聚會</h1>
-        <Text type="secondary">點選日期查看或新增活動；活動前 3 天起，開啟系統時會跳出提醒。</Text>
+        <Text type="secondary">
+          點選日期查看或新增活動；{reminderDays === 0 ? '活動當天' : `活動前 ${reminderDays} 天起`}
+          ，開啟系統時會跳出提醒（可在「系統設定」調整）。
+        </Text>
       </div>
 
       <Row gutter={16}>

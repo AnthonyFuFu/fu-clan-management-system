@@ -1,8 +1,5 @@
 import type { ClanEvent } from './types';
 
-// 活動前幾天開始提醒（含當天）
-export const REMINDER_DAYS = 3;
-
 const pad = (n: number) => String(n).padStart(2, '0');
 
 // 本地日期的 YYYY-MM-DD
@@ -18,13 +15,13 @@ export function daysUntil(eventDate: string, now: Date): number {
   return Math.round((event.getTime() - today.getTime()) / 86_400_000);
 }
 
-// 需要提醒的活動：今天到 REMINDER_DAYS 天後，今天已經結束的不算。依日期、時間排序。
-export function upcomingEvents(events: ClanEvent[], now: Date): ClanEvent[] {
+// 需要提醒的活動：今天到 reminderDays 天後（見系統設定），今天已經結束的不算。依日期、時間排序。
+export function upcomingEvents(events: ClanEvent[], now: Date, reminderDays: number): ClanEvent[] {
   const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   return events
     .filter((event) => {
       const days = daysUntil(event.eventDate, now);
-      if (days < 0 || days > REMINDER_DAYS) return false;
+      if (days < 0 || days > reminderDays) return false;
       if (days > 0) return true;
       // 今天：有結束時間看結束時間，只有開始時間看開始時間，整天活動整天都提醒
       const finishedAt = event.endTime ?? event.startTime;
