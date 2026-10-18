@@ -27,7 +27,8 @@
         "build:electron": "tsc -p tsconfig.electron.json",
         "electron": "npm run build:electron && electron .",
         "electron:dev": "concurrently -k \"vite\" \"npm run build:electron && wait-on tcp:127.0.0.1:3000 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:3000 electron .\"",
-        "electron:build": "npm run build && npm run build:electron && electron-builder --config electron-builder.js"
+        "electron:build": "npm run build && npm run build:electron && electron-builder --config electron-builder.js",
+        "icons": "electron scripts/generate-icons.js"
     },
     "devDependencies": {
         "@ant-design/cssinjs": "^2.1.2",

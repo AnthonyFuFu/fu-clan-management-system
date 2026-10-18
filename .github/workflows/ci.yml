@@ -16,6 +16,12 @@ concurrency:
 permissions:
   contents: read
 
+# 所有平台都用 bash：Windows 預設的 PowerShell 不一定會把指令的失敗傳回給步驟，
+# 曾發生打包失敗卻顯示成功、直到上傳步驟才因為找不到安裝檔而報錯
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test:
     name: 型別檢查與測試

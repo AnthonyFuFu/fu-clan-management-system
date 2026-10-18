@@ -53,7 +53,7 @@
 │   ├── hooks/                 # 共用 hooks（useAsyncAction：操作成功 / 失敗提示）
 │   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息；remountOnOpen：對話框每次開啟都用全新表單）
 │   ├── types/                 # 全域型別宣告（window.electronAPI）
-│   ├── assets/                # 應用程式圖示（打包時使用）
+│   ├── assets/                # 應用程式圖示：icon.svg 為原始檔，其餘由 npm run icons 產生
 │   └── pages/                 # 每個功能頁面一個資料夾
 │       ├── Dashboard/
 │       ├── Members/           # index.tsx + constants.ts + components/MemberFormModal.tsx
@@ -73,6 +73,8 @@
 ├── vite.config.mts            # Vite / Vitest 設定（含 @ 與 @shared 路徑別名）
 ├── tsconfig.json              # 畫面 (src/、shared/) 的 TypeScript 設定
 ├── tsconfig.electron.json     # 主程序 (main.ts、electron/、shared/) 的 TypeScript 設定
+├── scripts/
+│   └── generate-icons.js      # 由 src/assets/icon.svg 產生 icon.png / .ico / .icns（npm run icons）
 └── electron-builder.js        # electron-builder 打包設定
 ```
 
@@ -149,6 +151,7 @@ npm start
 | `npm run build:electron` | 編譯 Electron 主程序 TypeScript 到 `dist-electron/` |
 | `npm run electron` | 編譯主程序後以 Electron 開啟已編譯的 `build/`，等同正式版行為（需先 `npm run build`） |
 | `npm run electron:build` | 完整打包成可安裝的桌面應用程式（見下方「打包與安裝」） |
+| `npm run icons` | 修改 `src/assets/icon.svg` 後，重新產生 Windows / macOS / Linux 用的應用程式圖示 |
 | `npm test` | 以 Vitest 執行 `tests/` 底下的測試（watch 模式，存檔自動重跑；按 `q` 離開） |
 | `npx vitest run` | 只執行一次測試（適合 CI 或提交前檢查） |
 | `npx tsc --noEmit -p tests` | 型別檢查測試檔（Vitest 執行時不做型別檢查） |

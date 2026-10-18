@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- 應用程式圖示的原始檔。修改後執行 npm run icons 重新產生 icon.png / icon.ico / icon.icns -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A3282A"/>
+      <stop offset="1" stop-color="#7A1517"/>
+    </linearGradient>
+  </defs>
+  <!-- macOS 圖示慣例：內容約占畫布 80%，四周留白 -->
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="url(#bg)"/>
+  <rect x="140" y="140" width="744" height="744" rx="150" fill="none" stroke="#D9B45A" stroke-width="14"/>
+  <text x="512" y="520" text-anchor="middle" dominant-baseline="central"
+        font-family="Songti TC, STSong, Noto Serif TC, Noto Serif CJK TC, serif" font-weight="900"
+        font-size="560" fill="#F3D27A">傅</text>
+</svg>
