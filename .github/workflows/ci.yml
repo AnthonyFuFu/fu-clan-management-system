@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  # 也可以在 GitHub 的 Actions 頁面手動執行
+  workflow_dispatch:
+
+# 同一個分支 / PR 有新的 push 時，取消還在跑的舊流程
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 型別檢查與測試
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # 測試與編譯不需要 Electron 執行檔，跳過下載以加快速度
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+      - name: Type check (app)
+        run: npx tsc --noEmit
+
+      - name: Type check (tests)
+        run: npx tsc --noEmit -p tests
+
+      - name: Run tests
+        run: npx vitest run
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Electron main process
+        run: npm run build:electron
+
+  package:
+    name: 打包安裝檔 (${{ matrix.os }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # 某個平台打包失敗時，其他平台仍繼續，方便一次看出所有問題
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            installer: dist/*.exe
+          - os: macos-latest
+            installer: dist/*.dmg
+          - os: ubuntu-latest
+            installer: dist/*.AppImage
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Electron main process
+        run: npm run build:electron
+
+      - name: Package installer
+        run: npx electron-builder --config electron-builder.js --publish never
+        env:
+          # CI 上沒有 Apple 簽章憑證：不簽章（使用者第一次開啟需右鍵 →「打開」）
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      # 對應 holidayDessert 的「push 時才推送 Docker image」：PR 只驗證能打包，push 到 master 才保存安裝檔
+      - name: Upload installer
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: 傅氏宗親會管理系統-${{ runner.os }}
+          path: ${{ matrix.installer }}
+          if-no-files-found: error
+          retention-days: 30

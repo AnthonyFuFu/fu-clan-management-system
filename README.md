@@ -1,5 +1,7 @@
 # 傅氏宗親會管理系統 (fu-clan-management-system)
 
+[![CI](https://github.com/AnthonyFuFu/fu-clan-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/AnthonyFuFu/fu-clan-management-system/actions/workflows/ci.yml)
+
 以 [Vite](https://vite.dev/) + [Electron](https://www.electronjs.org/) 打造的桌面應用程式，前端使用 TypeScript + Ant Design，資料儲存於內嵌的 SQLite（[sql.js](https://sql.js.org/)）。
 
 ## 技術棧
@@ -100,7 +102,7 @@
 
 ## 環境需求
 
-- Node.js **22.13 以上的 22.x、24.x 或 26 以上**（建議使用 LTS 24）
+- Node.js **22.13 以上的 22.x、24.x 或 26 以上**（建議使用 LTS 24；專案根目錄的 `.nvmrc` 指定 24，使用 nvm 時執行 `nvm use` 即可）
   - Vitest 5、jsdom 29、concurrently 10 的共同需求，Node 20 與 23 無法使用
   - 用 `node -v` 確認版本
 - npm 10 以上
@@ -212,6 +214,19 @@ npx electron-builder --config electron-builder.js --dir
 ### 使用者端安裝需求
 
 打包出的安裝檔已包含完整的 `node_modules` 與 Electron 執行環境，使用者端**不需要**另外安裝 Node.js 或任何開發工具，下載安裝檔後即可直接安裝使用。
+
+## 持續整合（CI）
+
+設定檔：[.github/workflows/ci.yml](.github/workflows/ci.yml)。push 到 `master`、對 `master` 開 PR 時自動執行，也可以在 GitHub 的 Actions 頁面手動執行。
+
+| 階段 | 執行環境 | 內容 |
+|---|---|---|
+| 型別檢查與測試 | Ubuntu | `npm ci` → 型別檢查（程式與測試）→ `vitest run` → 編譯前端與主程序 |
+| 打包安裝檔 | Windows、macOS、Ubuntu 同時進行 | 測試通過後，以 electron-builder 打包 `.exe`、`.dmg`、`.AppImage` |
+
+- **PR**：只驗證能否通過測試與打包，不保存安裝檔。
+- **push 到 `master`**：打包好的安裝檔會上傳為 Artifact，到該次執行的頁面最下方「Artifacts」即可下載，保留 30 天。
+- macOS 安裝檔在 CI 上沒有簽章，使用者第一次開啟需在 Finder 對 App 按右鍵 →「打開」（見「打包與安裝」）。
 
 ## 資料儲存說明
 
