@@ -22,7 +22,10 @@ export function getSettings(): AppSettings {
   const reminderDays = Number(getMeta(KEYS.reminderDays));
   return {
     fontSize: isFontSize(fontSize) ? fontSize : DEFAULT_SETTINGS.fontSize,
-    reminderDays: getMeta(KEYS.reminderDays) !== null && isReminderDays(reminderDays) ? reminderDays : DEFAULT_SETTINGS.reminderDays,
+    reminderDays:
+      getMeta(KEYS.reminderDays) !== null && isReminderDays(reminderDays)
+        ? reminderDays
+        : DEFAULT_SETTINGS.reminderDays,
   };
 }
 

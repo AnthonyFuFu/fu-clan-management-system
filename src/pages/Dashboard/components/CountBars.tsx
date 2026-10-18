@@ -1,4 +1,3 @@
-import React from 'react';
 import { Empty, Typography } from 'antd';
 import type { CountItem } from '@shared/types';
 

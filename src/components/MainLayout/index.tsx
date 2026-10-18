@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Layout, Menu, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -29,7 +29,7 @@ const menuItems: MenuProps['items'] = [
 ];
 
 interface MainLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const MainLayout = ({ children }: MainLayoutProps) => {
@@ -43,15 +43,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider trigger={null} collapsible collapsed={collapsed} theme="light">
-        <div className="logo">
-          {!collapsed && <span>傅氏宗親會管理系統</span>}
-        </div>
-        <Menu
-          theme="light"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-        />
+        <div className="logo">{!collapsed && <span>傅氏宗親會管理系統</span>}</div>
+        <Menu theme="light" mode="inline" selectedKeys={[location.pathname]} items={menuItems} />
       </Sider>
       <Layout className="site-layout">
         <Header className="site-layout-header" style={{ padding: 0, background: '#fff' }}>
@@ -63,10 +56,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           />
           <EventReminder />
         </Header>
-        <Content
-          className="site-layout-content"
-          style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}
-        >
+        <Content className="site-layout-content" style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
           {children}
         </Content>
       </Layout>

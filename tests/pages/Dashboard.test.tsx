@@ -11,11 +11,6 @@ function renderDashboard() {
   );
 }
 
-test('shows a hint when not running inside Electron', () => {
-  renderDashboard();
-  expect(screen.getByText(/請以 npm run electron:dev 開啟/)).toBeInTheDocument();
-});
-
 test('shows member, event and finance statistics with reminders', async () => {
   mockElectronAPI({
     getDashboardStats: vi.fn().mockResolvedValue({
@@ -29,9 +24,23 @@ test('shows member, event and finance statistics with reminders', async () => {
       missingContactCount: 2,
       upcomingBirthdays: [{ id: 1, name: '傅壽星', generation: 17, date: '2026-10-20', age: 60, daysUntil: 2 }],
       upcomingEvents: [
-        { id: 1, title: '秋季祭祖', eventDate: '2099-01-01', startTime: '09:00', endTime: null, location: '傅氏宗祠', note: null },
+        {
+          id: 1,
+          title: '秋季祭祖',
+          eventDate: '2099-01-01',
+          startTime: '09:00',
+          endTime: null,
+          location: '傅氏宗祠',
+          note: null,
+        },
       ],
-      finance: { ...EMPTY_FINANCE_SUMMARY, duesMemberCount: 10, duesPaidCount: 7, duesExpected: 10000, duesCollected: 7000 },
+      finance: {
+        ...EMPTY_FINANCE_SUMMARY,
+        duesMemberCount: 10,
+        duesPaidCount: 7,
+        duesExpected: 10000,
+        duesCollected: 7000,
+      },
       recentTransactions: [
         { id: 1, type: 'income', category: '樂捐', item: '宗親樂捐', amount: 5000, txDate: '2026-10-01', note: null },
       ],

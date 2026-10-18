@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Button, Empty, Modal, Popover, Tooltip } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useSettings } from '@/components/SettingsProvider';
+import { useSettings } from '@/providers/SettingsProvider';
 import UpcomingEventList from './UpcomingEventList';
-import { useUpcomingEvents } from './UpcomingEventsContext';
+import { useUpcomingEvents } from '@/providers/UpcomingEventsProvider';
 import './EventReminder.css';
 
 // 開啟程式後只自動跳出一次；之後要看提醒點右上角的鈴鐺

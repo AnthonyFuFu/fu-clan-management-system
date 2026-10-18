@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tag } from 'antd';
 import type { DuesRecord } from '@shared/types';
 

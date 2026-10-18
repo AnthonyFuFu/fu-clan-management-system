@@ -1,6 +1,4 @@
-// jest-dom adds custom matchers for asserting on DOM nodes,
-// e.g. expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
+// jest-dom 提供檢查 DOM 的斷言，例如 expect(element).toHaveTextContent(/react/i)
 import '@testing-library/jest-dom/vitest';
 import '@/utils/dayjsLocale';
 

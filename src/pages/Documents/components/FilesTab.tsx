@@ -1,31 +1,27 @@
-import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Popconfirm, Table, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, FileOutlined, FolderOpenOutlined, UploadOutlined } from '@ant-design/icons';
 import type { DocumentFile } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 import { formatDateTime, formatFileSize, savedFileMessage } from '@/utils/format';
 
 const { Text } = Typography;
 
 const FilesTab = () => {
-  const api = window.electronAPI!;
+  const api = useElectronAPI();
   const runAction = useAsyncAction();
-  const [files, setFiles] = useState<DocumentFile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const reload = useCallback(() => {
-    setLoading(true);
-    api
-      .listDocuments()
-      .then(setFiles)
-      .finally(() => setLoading(false));
-  }, [api]);
-
-  useEffect(reload, [reload]);
+  const { data: files = [], loading, reload } = useApiQuery((a) => a.listDocuments(), []);
 
   const upload = async () => {
-    if (await runAction(() => api.uploadDocuments(), (count) => (count > 0 ? `已上傳 ${count} 個檔案` : null), '上傳失敗')) {
+    if (
+      await runAction(
+        () => api.uploadDocuments(),
+        (count) => (count > 0 ? `已上傳 ${count} 個檔案` : null),
+        '上傳失敗'
+      )
+    ) {
       reload();
     }
   };
@@ -53,7 +49,13 @@ const FilesTab = () => {
             type="link"
             size="small"
             icon={<FolderOpenOutlined />}
-            onClick={() => runAction(() => api.openDocument(row.id), () => null, '開啟失敗')}
+            onClick={() =>
+              runAction(
+                () => api.openDocument(row.id),
+                () => null,
+                '開啟失敗'
+              )
+            }
           >
             開啟
           </Button>
@@ -61,9 +63,7 @@ const FilesTab = () => {
             type="link"
             size="small"
             icon={<DownloadOutlined />}
-            onClick={() =>
-              runAction(() => api.downloadDocument(row.id), savedFileMessage, '下載失敗')
-            }
+            onClick={() => runAction(() => api.downloadDocument(row.id), savedFileMessage, '下載失敗')}
           >
             下載
           </Button>

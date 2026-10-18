@@ -1,16 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Calendar, Col, Row, Typography } from 'antd';
 import type { CalendarProps } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { toDateString } from '@shared/events';
 import type { ClanEvent, ClanEventInput } from '@shared/types';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
-import { useUpcomingEvents } from '@/components/EventReminder/UpcomingEventsContext';
-import { useSettings } from '@/components/SettingsProvider';
+import { useUpcomingEvents } from '@/providers/UpcomingEventsProvider';
+import { useSettings } from '@/providers/SettingsProvider';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 import { DATE_FORMAT, formatEventTime } from '@/utils/format';
 import DayPanel from './components/DayPanel';
-import EventFormModal, { EventFormState } from './components/EventFormModal';
+import EventFormModal, { type EventFormState } from './components/EventFormModal';
 import UpcomingPanel, { UPCOMING_PANEL_DAYS } from './components/UpcomingPanel';
 import './Events.css';
 
@@ -19,36 +20,34 @@ const { Text } = Typography;
 // 行事曆格子裡最多列出幾筆，其餘顯示「還有 N 筆」
 const MAX_EVENTS_PER_CELL = 3;
 
+// 固定的空陣列：載入前用它，useMemo 不會因為每次都是新陣列而重算
+const EMPTY_EVENTS: ClanEvent[] = [];
+
 // 一次載入整年（含前後各一個月，月曆畫面頭尾會露出相鄰月份的日子），切換月份不用每次重抓
 function yearRange(year: number): [string, string] {
   return [`${year - 1}-12-01`, `${year + 1}-01-31`];
 }
 
 const Events = () => {
-  const api = window.electronAPI;
+  const api = useElectronAPI();
   const runAction = useAsyncAction();
   const { refresh: refreshReminders } = useUpcomingEvents();
   const { reminderDays } = useSettings().settings;
   const [panelDate, setPanelDate] = useState<Dayjs>(dayjs());
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-  const [events, setEvents] = useState<ClanEvent[]>([]);
-  const [upcoming, setUpcoming] = useState<ClanEvent[]>([]);
   const [formState, setFormState] = useState<EventFormState>(null);
   const [version, setVersion] = useState(0);
   const year = panelDate.year();
 
-  useEffect(() => {
-    if (!api) return;
-    const [from, to] = yearRange(year);
-    api.listEvents(from, to).then(setEvents);
-  }, [api, year, version]);
-
-  useEffect(() => {
-    if (!api) return;
-    const today = new Date();
-    const last = new Date(today.getFullYear(), today.getMonth(), today.getDate() + UPCOMING_PANEL_DAYS);
-    api.listEvents(toDateString(today), toDateString(last)).then(setUpcoming);
-  }, [api, version]);
+  const { data: events = EMPTY_EVENTS } = useApiQuery((a) => a.listEvents(...yearRange(year)), [year, version]);
+  const { data: upcoming = EMPTY_EVENTS } = useApiQuery(
+    (a) => {
+      const today = new Date();
+      const last = new Date(today.getFullYear(), today.getMonth(), today.getDate() + UPCOMING_PANEL_DAYS);
+      return a.listEvents(toDateString(today), toDateString(last));
+    },
+    [version]
+  );
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, ClanEvent[]>();
@@ -60,10 +59,6 @@ const Events = () => {
     setVersion((v) => v + 1);
     refreshReminders();
   }, [refreshReminders]);
-
-  if (!api) {
-    return <DesktopOnlyNotice title="活動與聚會" />;
-  }
 
   const eventsOn = (date: Dayjs) => eventsByDate.get(date.format(DATE_FORMAT)) ?? [];
 
@@ -94,19 +89,21 @@ const Events = () => {
     return (
       <ul className="calendar-events">
         {dayEvents.slice(0, MAX_EVENTS_PER_CELL).map((event) => (
-          <li
-            key={event.id}
-            className="calendar-event"
-            // 格子很窄時只放得下活動名稱，時間與地點放在滑鼠提示
-            title={`${formatEventTime(event)} ${event.title}${event.location ? `（${event.location}）` : ''}`}
-            onClick={(e) => {
-              // 點活動直接修改，不觸發「選取這一天」
-              e.stopPropagation();
-              setSelectedDate(current);
-              setFormState({ mode: 'edit', event });
-            }}
-          >
-            {event.title}
+          <li key={event.id} className="calendar-event">
+            <button
+              type="button"
+              className="plain-button calendar-event-button"
+              // 格子很窄時只放得下活動名稱，時間與地點放在滑鼠提示
+              title={`${formatEventTime(event)} ${event.title}${event.location ? `（${event.location}）` : ''}`}
+              onClick={(e) => {
+                // 點活動直接修改，不觸發「選取這一天」
+                e.stopPropagation();
+                setSelectedDate(current);
+                setFormState({ mode: 'edit', event });
+              }}
+            >
+              {event.title}
+            </button>
           </li>
         ))}
         {dayEvents.length > MAX_EVENTS_PER_CELL && (

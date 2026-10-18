@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card, InputNumber, Space, Typography } from 'antd';
 import { BellOutlined, FontSizeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { FONT_SIZE_OPTIONS, MAX_REMINDER_DAYS, MIN_REMINDER_DAYS } from '@shared/settings';
 import type { FontSize } from '@shared/types';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
-import { useSettings } from '@/components/SettingsProvider';
+import { useSettings } from '@/providers/SettingsProvider';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import BackupCard from './components/BackupCard';
 import './Settings.css';
 
 const { Paragraph, Text } = Typography;
@@ -23,10 +23,6 @@ const Settings = () => {
   useEffect(() => {
     setReminderDays(settings.reminderDays);
   }, [settings.reminderDays]);
-
-  if (!window.electronAPI) {
-    return <DesktopOnlyNotice title="系統設定" />;
-  }
 
   const changeFontSize = (fontSize: FontSize) => {
     const label = FONT_SIZE_OPTIONS.find((option) => option.value === fontSize)?.label;
@@ -125,6 +121,8 @@ const Settings = () => {
             </Paragraph>
           )}
         </Card>
+
+        <BackupCard />
       </Space>
     </div>
   );

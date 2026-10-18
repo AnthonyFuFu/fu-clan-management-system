@@ -1,10 +1,18 @@
-import { db, getMeta, queryAll, queryOne, queryScalar, saveDatabase, setMeta } from './connection';
-import { seedData, seedFinance } from './seed';
+import {
+  db,
+  getMeta,
+  queryAll,
+  queryOne,
+  queryScalar,
+  saveDatabase,
+  setMeta,
+  snapshotDatabase,
+  withoutForeignKeys,
+} from './connection';
+import { insertTransaction } from './finance';
+import { seedDemoFinance, seedDemoMembers } from './seed';
 
-// Bump this whenever the members schema/seed data shape changes — triggers a reseed on existing installs.
-export const SEED_VERSION = '3';
-
-// Bump this when the finance tables need a migration — independent of SEED_VERSION so a member reseed never wipes ledger data.
+// 財務資料表的版本；需要遷移時調高，遷移程式必須保留既有資料
 const FINANCE_VERSION = '1';
 
 export function createSchema(): void {
@@ -73,7 +81,7 @@ export function createSchema(): void {
   `);
 }
 
-// Columns added to events after the first release (originally only title + date).
+// 第一版之後才加入 events 的欄位（最早只有 title、event_date）。
 export function migrateEventColumns(): void {
   const columns = queryAll<{ name: string }>('PRAGMA table_info(events)').map((column) => column.name);
   const missing = ['start_time', 'end_time', 'location', 'note'].filter((name) => !columns.includes(name));
@@ -83,13 +91,12 @@ export function migrateEventColumns(): void {
   }
 }
 
-// Columns added to members after the first release. Existing installs get them here; new installs
-// already have them from createSchema().
+// 第一版之後才加入 members 的欄位。既有的資料庫在這裡補上；新安裝的資料庫在 createSchema() 就已經有了。
 export function migrateMemberColumns(): void {
   const columns = queryAll<{ name: string }>('PRAGMA table_info(members)').map((column) => column.name);
   if (!columns.includes('deceased')) {
     db().run('ALTER TABLE members ADD COLUMN deceased INTEGER NOT NULL DEFAULT 0;');
-    // No death records existed before this column — treat anyone born 100+ years ago as deceased.
+    // 加這個欄位之前沒有過世紀錄：生於 100 年以前的人一律視為已故。
     db().run('UPDATE members SET deceased = 1 WHERE CAST(substr(birthday, 1, 4) AS INTEGER) <= ?;', [
       new Date().getFullYear() - 100,
     ]);
@@ -97,25 +104,31 @@ export function migrateMemberColumns(): void {
   }
 }
 
-// Existing installs may have the old (pre-genealogy) members schema — rebuild members/branches on version bump.
-export function migrateMembersIfNeeded(): void {
-  if (getMeta('seed_version') === SEED_VERSION) {
+// 很早期的版本（還沒有世系功能）的 members 表沒有 generation、parent_id，資料結構完全不同，無法逐欄升級。
+// 遇到時先把整個資料庫快照到 backups/，再重建 members / branches；其他資料表保持不動。
+// 除此之外的結構變更一律用 ALTER TABLE 等方式保留資料（見上方的 migrate*Columns），絕對不要刪除使用者資料。
+export function migrateLegacyMembers(seedDemo: boolean): void {
+  const columns = queryAll<{ name: string }>('PRAGMA table_info(members)').map((column) => column.name);
+  if (columns.includes('generation') && columns.includes('parent_id')) {
     return;
   }
 
-  db().run('DROP TABLE IF EXISTS members;');
-  db().run('DROP TABLE IF EXISTS branches;');
-  createSchema();
-  seedData();
-  // Member ids are stable in MEMBER_SEED, but drop roster rows whose member no longer exists.
-  db().run('DELETE FROM dues_payments WHERE member_id NOT IN (SELECT id FROM members);');
-  setMeta('seed_version', SEED_VERSION);
+  snapshotDatabase('before-genealogy-upgrade');
+  withoutForeignKeys(() => {
+    db().run('DROP TABLE IF EXISTS members;');
+    db().run('DROP TABLE IF EXISTS branches;');
+    createSchema();
+    db().run('DELETE FROM dues_payments WHERE member_id NOT IN (SELECT id FROM members);');
+  });
+  if (seedDemo) {
+    seedDemoMembers();
+  }
   saveDatabase();
 }
 
-// Replaces the old single-amount finance_records table with the dues roster + transaction ledger.
-// The old total is carried over as an opening-balance income so the dashboard figure is preserved.
-export function migrateFinanceIfNeeded(): void {
+// 把舊版只有總額的 finance_records 換成「會費名單 + 收支明細」。
+// 舊的總額轉成一筆「上期結轉」收入，結餘維持不變。
+export function migrateFinanceIfNeeded(seedDemo: boolean): void {
   if (getMeta('finance_version') === FINANCE_VERSION) {
     return;
   }
@@ -124,12 +137,21 @@ export function migrateFinanceIfNeeded(): void {
     'table',
     'finance_records',
   ]);
-  const legacyTotal = hasLegacyTable
-    ? Number(queryScalar('SELECT COALESCE(SUM(amount), 0) FROM finance_records'))
-    : 0;
+  const legacyTotal = hasLegacyTable ? Number(queryScalar('SELECT COALESCE(SUM(amount), 0) FROM finance_records')) : 0;
 
   if (queryScalar('SELECT COUNT(*) FROM finance_transactions') === 0) {
-    seedFinance(legacyTotal);
+    if (seedDemo) {
+      seedDemoFinance(legacyTotal);
+    } else if (legacyTotal > 0) {
+      insertTransaction({
+        type: 'income',
+        category: '上期結轉',
+        item: '舊版系統結餘轉入',
+        amount: Math.round(legacyTotal),
+        txDate: `${new Date().getFullYear() - 1}-01-01`,
+        note: null,
+      });
+    }
   }
   db().run('DROP TABLE IF EXISTS finance_records;');
   setMeta('finance_version', FINANCE_VERSION);

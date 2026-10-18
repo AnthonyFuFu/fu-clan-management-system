@@ -4,7 +4,12 @@ import type { ClanEvent } from '@shared/types';
 // 固定「現在」為 2026-10-18（星期日）14:30
 const NOW = new Date(2026, 9, 18, 14, 30);
 
-function event(id: number, eventDate: string, startTime: string | null = null, endTime: string | null = null): ClanEvent {
+function event(
+  id: number,
+  eventDate: string,
+  startTime: string | null = null,
+  endTime: string | null = null
+): ClanEvent {
   return { id, title: `活動${id}`, eventDate, startTime, endTime, location: null, note: null };
 }
 

@@ -1,7 +1,6 @@
-import React from 'react';
 import { Form, Input, InputNumber, Modal } from 'antd';
 import type { DuesRecord } from '@shared/types';
-import { remountOnOpen } from '@/utils/remountOnOpen';
+import { remountOnOpen } from '@/hoc/remountOnOpen';
 
 const EditDuesModal = ({
   record,
@@ -28,7 +27,12 @@ const EditDuesModal = ({
           initialValues={{ amount: record.amountDue, note: record.note ?? '' }}
           onFinish={(v) => onSubmit(v.amount, v.note?.trim() || null)}
         >
-          <Form.Item label="應繳金額" name="amount" extra="減免可調低金額，設為 0 即為免繳" rules={[{ required: true, message: '請輸入金額' }]}>
+          <Form.Item
+            label="應繳金額"
+            name="amount"
+            extra="減免可調低金額，設為 0 即為免繳"
+            rules={[{ required: true, message: '請輸入金額' }]}
+          >
             <InputNumber min={0} precision={0} step={100} suffix="元" style={{ width: 200 }} />
           </Form.Item>
           <Form.Item label="備註" name="note">

@@ -7,7 +7,16 @@ import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
 const YEAR = new Date().getFullYear();
 
 const DUES: DuesRecord[] = [
-  { id: 1, year: YEAR, memberId: 10, name: '傅志成', generation: 16, amountDue: 1000, paidDate: `${YEAR}-02-20`, note: null },
+  {
+    id: 1,
+    year: YEAR,
+    memberId: 10,
+    name: '傅志成',
+    generation: 16,
+    amountDue: 1000,
+    paidDate: `${YEAR}-02-20`,
+    note: null,
+  },
   { id: 2, year: YEAR, memberId: 11, name: '傅俊宏', generation: 17, amountDue: 1000, paidDate: null, note: null },
   { id: 3, year: YEAR, memberId: 12, name: '傅宗翰', generation: 19, amountDue: 0, paidDate: null, note: '學生免繳' },
 ];
@@ -35,11 +44,6 @@ function mockApi(overrides: Parameters<typeof mockElectronAPI>[0] = {}) {
 function renderFinance() {
   return renderWithAntd(<Finance />);
 }
-
-test('shows a hint when not running inside Electron', () => {
-  renderFinance();
-  expect(screen.getByText(/請以 npm run electron:dev 開啟/)).toBeInTheDocument();
-});
 
 test('lists the dues roster with paid / unpaid / exempt status', async () => {
   mockApi();
@@ -72,4 +76,14 @@ test('offers to open the year when it has no dues roster yet', async () => {
   await userEvent.click(screen.getByRole('tab', { name: '會費收繳' }));
 
   expect(await screen.findByRole('button', { name: new RegExp(`開立 ${YEAR} 年度會費`) })).toBeInTheDocument();
+});
+
+test('exports the selected year to Excel from the page header', async () => {
+  const api = mockApi({ exportTransactions: vi.fn().mockResolvedValue('/Users/me/Downloads/收支明細.xlsx') });
+  renderFinance();
+
+  await userEvent.hover(screen.getByRole('button', { name: /匯出 Excel/ }));
+  await userEvent.click(await screen.findByText(`${YEAR} 年度收支明細`));
+  expect(api.exportTransactions).toHaveBeenCalledWith(YEAR);
+  expect(await screen.findByText('已儲存：收支明細.xlsx（Downloads 資料夾）')).toBeInTheDocument();
 });

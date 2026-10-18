@@ -1,8 +1,8 @@
-import React from 'react';
+import type { ReactElement } from 'react';
 import { render } from '@testing-library/react';
 import { StyleProvider } from '@ant-design/cssinjs';
 import { App as AntdApp } from 'antd';
-import { Mocked } from 'vitest';
+import { type Mocked } from 'vitest';
 import type { ElectronAPI } from '@shared/ipc';
 import type { DashboardStats, FinanceSummary } from '@shared/types';
 
@@ -56,6 +56,7 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
     listMembers: vi.fn().mockResolvedValue({ rows: [], total: 0, generations: [] }),
     createMember: vi.fn().mockResolvedValue(1),
     updateMember: vi.fn().mockResolvedValue(undefined),
+    deleteMember: vi.fn().mockResolvedValue(undefined),
     getBranches: vi.fn().mockResolvedValue([]),
     getFamilyTree: vi.fn().mockResolvedValue(null),
 
@@ -87,6 +88,10 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
     saveEvent: vi.fn().mockResolvedValue(1),
     deleteEvent: vi.fn().mockResolvedValue(undefined),
 
+    exportBackup: vi.fn().mockResolvedValue(null),
+    restoreBackup: vi.fn().mockResolvedValue(false),
+    openBackupFolder: vi.fn().mockResolvedValue(undefined),
+
     getSettings: vi.fn().mockResolvedValue({ fontSize: 'standard', reminderDays: 3 }),
     updateSettings: vi.fn().mockImplementation(async (patch) => ({ fontSize: 'standard', reminderDays: 3, ...patch })),
   };
@@ -102,7 +107,7 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
 const detachedStyleContainer = document.createElement('div');
 
 // 頁面用到 App.useApp()（提示訊息），必須包在 antd 的 <App> 裡
-export function renderWithAntd(ui: React.ReactElement) {
+export function renderWithAntd(ui: ReactElement) {
   return render(
     <StyleProvider container={detachedStyleContainer}>
       <AntdApp>{ui}</AntdApp>

@@ -4,8 +4,9 @@ import { toDateString } from '../../shared/events';
 import { db } from './connection';
 import { createDuesYear, getDues, insertTransaction, setDuesPaid } from './finance';
 
-// Hand-authored test genealogy: a single trunk (generation 1-14), branching out toward the
-// present (generation 15-19) so the family-tree feature has siblings/cousins to render.
+// 範例資料：只在開發模式與測試中建立（正式版從空白資料庫開始，見 initDatabase 的 seedDemo）。
+//
+// 手動編寫的範例世系：第 1–14 世單傳，第 15–19 世開始分支，讓世系圖有兄弟、堂兄弟可以顯示。
 const MEMBER_SEED: Array<{
   id: number;
   name: string;
@@ -58,7 +59,7 @@ const MEMBER_SEED: Array<{
 const HISTORICAL_JOBS = ['務農', '私塾先生', '地方仕紳', '商人'];
 const MODERN_JOBS = ['工程師', '教師', '醫師', '商人', '學生', '公務員'];
 
-export function seedData(): void {
+export function seedDemoMembers(): void {
   const insertBranch = db().prepare('INSERT INTO branches (name) VALUES (?)');
   for (let i = 1; i <= 12; i += 1) {
     insertBranch.run([`第 ${i} 分支`]);
@@ -95,7 +96,9 @@ export function seedData(): void {
     ]);
   });
   insertMember.free();
+}
 
+export function seedDemoEvents(): void {
   // 範例活動以「今天」為基準排列，讓行事曆與提醒一開啟就有內容
   const today = new Date();
   const daysFromToday = (days: number) =>
@@ -115,15 +118,15 @@ export function seedData(): void {
 
 const DEMO_OPENING_BALANCE = 128500;
 
-// Demo ledger for last year and this year so the finance page has something to show.
-export function seedFinance(openingBalance: number): void {
+// 去年與今年的範例帳目，讓財務頁面一開啟就有內容。
+export function seedDemoFinance(openingBalance: number): void {
   const thisYear = new Date().getFullYear();
   const lastYear = thisYear - 1;
 
   createDuesYear(lastYear, DEFAULT_DUES_AMOUNT);
   createDuesYear(thisYear, DEFAULT_DUES_AMOUNT);
 
-  // Last year: everyone paid except the last two on the roster. This year: roughly 60% paid so far.
+  // 去年：除了名單最後兩位都已繳費。今年：目前約六成已繳。
   const lastYearIds = getDues(lastYear).map((row) => row.id);
   setDuesPaid(lastYearIds.slice(0, -2), `${lastYear}-02-15`);
   const thisYearIds = getDues(thisYear).map((row) => row.id);
@@ -134,20 +137,68 @@ export function seedFinance(openingBalance: number): void {
       type: 'income',
       category: '上期結轉',
       item: '上期結餘轉入',
-      amount: openingBalance > 0 ? openingBalance : DEMO_OPENING_BALANCE,
+      amount: openingBalance > 0 ? Math.round(openingBalance) : DEMO_OPENING_BALANCE,
       txDate: `${lastYear}-01-01`,
       note: null,
     },
     { type: 'income', category: '樂捐', item: '春祭宗親樂捐', amount: 6000, txDate: `${lastYear}-04-04`, note: null },
-    { type: 'expense', category: '祭祖', item: '春季祭祖（供品、香燭）', amount: 15000, txDate: `${lastYear}-04-04`, note: null },
-    { type: 'expense', category: '獎助學金', item: '宗親子弟獎助學金', amount: 12000, txDate: `${lastYear}-08-20`, note: '4 名 × 3,000 元' },
-    { type: 'expense', category: '祭祖', item: '秋季祭祖（供品、香燭）', amount: 15000, txDate: `${lastYear}-10-10`, note: null },
-    { type: 'expense', category: '行政庶務', item: '文具、郵資', amount: 2300, txDate: `${lastYear}-12-15`, note: null },
+    {
+      type: 'expense',
+      category: '祭祖',
+      item: '春季祭祖（供品、香燭）',
+      amount: 15000,
+      txDate: `${lastYear}-04-04`,
+      note: null,
+    },
+    {
+      type: 'expense',
+      category: '獎助學金',
+      item: '宗親子弟獎助學金',
+      amount: 12000,
+      txDate: `${lastYear}-08-20`,
+      note: '4 名 × 3,000 元',
+    },
+    {
+      type: 'expense',
+      category: '祭祖',
+      item: '秋季祭祖（供品、香燭）',
+      amount: 15000,
+      txDate: `${lastYear}-10-10`,
+      note: null,
+    },
+    {
+      type: 'expense',
+      category: '行政庶務',
+      item: '文具、郵資',
+      amount: 2300,
+      txDate: `${lastYear}-12-15`,
+      note: null,
+    },
     { type: 'income', category: '樂捐', item: '春祭宗親樂捐', amount: 8000, txDate: `${thisYear}-04-04`, note: null },
-    { type: 'expense', category: '祭祖', item: '春季祭祖（供品、香燭）', amount: 16000, txDate: `${thisYear}-04-04`, note: null },
-    { type: 'expense', category: '活動聯誼', item: '宗親聯誼餐會', amount: 24000, txDate: `${thisYear}-06-08`, note: '3 桌' },
-    { type: 'expense', category: '行政庶務', item: '文具、郵資', amount: 1500, txDate: `${thisYear}-06-30`, note: null },
+    {
+      type: 'expense',
+      category: '祭祖',
+      item: '春季祭祖（供品、香燭）',
+      amount: 16000,
+      txDate: `${thisYear}-04-04`,
+      note: null,
+    },
+    {
+      type: 'expense',
+      category: '活動聯誼',
+      item: '宗親聯誼餐會',
+      amount: 24000,
+      txDate: `${thisYear}-06-08`,
+      note: '3 桌',
+    },
+    {
+      type: 'expense',
+      category: '行政庶務',
+      item: '文具、郵資',
+      amount: 1500,
+      txDate: `${thisYear}-06-30`,
+      note: null,
+    },
   ];
   demo.forEach((tx) => insertTransaction(tx));
 }
-

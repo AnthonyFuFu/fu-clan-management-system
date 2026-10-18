@@ -1,9 +1,7 @@
 // @vitest-environment node
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import type { MemberInput } from '@shared/types';
 import * as database from '../../electron/db';
+import { DEMO, tempDir } from '../helpers/database';
 
 function input(overrides: Partial<MemberInput>): MemberInput {
   return {
@@ -27,7 +25,7 @@ function findMember(id: number) {
 }
 
 beforeAll(async () => {
-  await database.initDatabase(fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-')));
+  await database.initDatabase(tempDir(), DEMO);
 });
 
 test('lists members page by page, ordered by generation', () => {
@@ -48,7 +46,9 @@ test('filters by keyword, generation and gender', () => {
 
 test('a new child gets its parent’s generation + 1, whatever generation was sent', () => {
   const parent = database.listMembers({ keyword: '傅宗翰', page: 1, pageSize: 1 }).rows[0];
-  const id = database.createMember(input({ name: '傅新生', parentId: parent.id, generation: 99, cellphone: ' 0912000000 ' }));
+  const id = database.createMember(
+    input({ name: '傅新生', parentId: parent.id, generation: 99, cellphone: ' 0912000000 ' })
+  );
 
   const child = findMember(id);
   expect(child.generation).toBe(parent.generation + 1);
@@ -72,7 +72,9 @@ test('refuses to make a member their own ancestor', () => {
   const parent = database.createMember(input({ name: '傅父', generation: 3 }));
   const child = database.createMember(input({ name: '傅子', parentId: parent }));
 
-  expect(() => database.updateMember(parent, input({ name: '傅父', parentId: child }))).toThrow('不能將自己或自己的子孫設為父母');
+  expect(() => database.updateMember(parent, input({ name: '傅父', parentId: child }))).toThrow(
+    '不能將自己或自己的子孫設為父母'
+  );
   expect(() => database.updateMember(parent, input({ name: '傅父', parentId: parent }))).toThrow();
   expect(findMember(parent).parentId).toBeNull();
 });

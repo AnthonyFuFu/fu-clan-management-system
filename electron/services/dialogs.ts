@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, FileFilter } from 'electron';
+import { app, BrowserWindow, dialog, type FileFilter } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import type * as XLSX from 'xlsx';
@@ -25,8 +25,24 @@ export async function askOpenPaths(options: { multiple: boolean; filters?: FileF
     filters: options.filters,
   };
   const window = parentWindow();
-  const result = window ? await dialog.showOpenDialog(window, dialogOptions) : await dialog.showOpenDialog(dialogOptions);
+  const result = window
+    ? await dialog.showOpenDialog(window, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions);
   return result.canceled ? [] : result.filePaths;
+}
+
+// 選擇資料夾；取消時為 null
+export async function askDirectory(title: string, create = false): Promise<string | null> {
+  const dialogOptions: Electron.OpenDialogOptions = {
+    title,
+    defaultPath: app.getPath('documents'),
+    properties: create ? ['openDirectory', 'createDirectory'] : ['openDirectory'],
+  };
+  const window = parentWindow();
+  const result = window
+    ? await dialog.showOpenDialog(window, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions);
+  return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
 }
 
 export async function saveWorkbook(book: XLSX.WorkBook, defaultName: string): Promise<string | null> {

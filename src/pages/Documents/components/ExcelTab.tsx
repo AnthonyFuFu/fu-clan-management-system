@@ -1,49 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button, Card, Col, Row, Select, Typography } from 'antd';
 import { DownloadOutlined, FileExcelOutlined, ImportOutlined } from '@ant-design/icons';
-import type { MemberImportPreview } from '@shared/types';
+import { useMemberImport } from '@/components/MemberImport';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 import { savedFileMessage as savedMessage } from '@/utils/format';
-import ImportPreviewModal from './ImportPreviewModal';
 
 const { Paragraph, Text } = Typography;
 
 const YearSelect = ({ years, value, onChange }: { years: number[]; value: number; onChange: (y: number) => void }) => (
-  <Select value={value} onChange={onChange} options={years.map((y) => ({ value: y, label: `${y} 年度` }))} style={{ width: 120 }} />
+  <Select
+    value={value}
+    onChange={onChange}
+    options={years.map((y) => ({ value: y, label: `${y} 年度` }))}
+    style={{ width: 120 }}
+  />
 );
 
 const ExcelTab = () => {
-  const api = window.electronAPI!;
+  const api = useElectronAPI();
   const runAction = useAsyncAction();
   const thisYear = new Date().getFullYear();
-  const [years, setYears] = useState<number[]>([thisYear]);
   const [duesYear, setDuesYear] = useState(thisYear);
   const [txYear, setTxYear] = useState(thisYear);
-  const [preview, setPreview] = useState<MemberImportPreview | null>(null);
-  const [importing, setImporting] = useState(false);
+  const memberImport = useMemberImport();
 
-  useEffect(() => {
-    api.getFinanceYears().then(setYears);
-  }, [api]);
-
-  const pickImportFile = () =>
-    runAction(
-      async () => {
-        const result = await api.previewMemberImport();
-        // 取消選檔時保留原本的預覽
-        if (result) setPreview(result);
-      },
-      () => null,
-      '無法讀取檔案'
-    );
-
-  const confirmImport = async () => {
-    if (!preview) return;
-    setImporting(true);
-    const ok = await runAction(() => api.confirmMemberImport(preview.token), (count) => `已匯入 ${count} 位宗親`, '匯入失敗');
-    setImporting(false);
-    if (ok) setPreview(null);
-  };
+  const { data: years = [thisYear] } = useApiQuery((a) => a.getFinanceYears(), []);
 
   return (
     <>
@@ -96,13 +79,10 @@ const ExcelTab = () => {
               3. 沒有錯誤後確認匯入
             </Paragraph>
             <div className="documents-card-actions">
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => runAction(() => api.downloadMemberImportTemplate(), savedMessage, '下載失敗')}
-              >
+              <Button icon={<DownloadOutlined />} onClick={memberImport.downloadTemplate}>
                 下載範本
               </Button>
-              <Button type="primary" icon={<ImportOutlined />} onClick={pickImportFile}>
+              <Button type="primary" icon={<ImportOutlined />} onClick={memberImport.pickImportFile}>
                 選擇 Excel 檔案
               </Button>
             </div>
@@ -113,13 +93,7 @@ const ExcelTab = () => {
         </Col>
       </Row>
 
-      <ImportPreviewModal
-        preview={preview}
-        importing={importing}
-        onClose={() => setPreview(null)}
-        onConfirm={confirmImport}
-        onPickAgain={pickImportFile}
-      />
+      {memberImport.modal}
     </>
   );
 };

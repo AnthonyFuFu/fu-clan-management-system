@@ -3,7 +3,7 @@ import { GENDER_LABEL } from '../../../shared/labels';
 import type { Gender } from '../../../shared/types';
 import { getFinanceSummary, getLivingDuesStatus, getTransactions } from '../../db/finance';
 import type { LivingDuesStatus } from '../../db/finance';
-import { CellValue, Column, tableSheet, workbook } from './sheet';
+import { type CellValue, type Column, tableSheet, workbook } from './sheet';
 
 export function duesStatusLabel(row: Pick<LivingDuesStatus, 'amountDue' | 'paidDate'>): string {
   if (row.amountDue === null) return '未列入名單';
@@ -42,7 +42,7 @@ export function buildDuesStatusWorkbook(year: number): XLSX.WorkBook {
 
   const count = (label: string) => rows.filter((row) => duesStatusLabel(row) === label).length;
   const expected = rows.reduce((sum, row) => sum + (row.amountDue ?? 0), 0);
-  const collected = rows.reduce((sum, row) => sum + (row.paidDate ? row.amountDue ?? 0 : 0), 0);
+  const collected = rows.reduce((sum, row) => sum + (row.paidDate ? (row.amountDue ?? 0) : 0), 0);
   const summary = tableSheet(
     [
       { header: '項目', width: 16 },

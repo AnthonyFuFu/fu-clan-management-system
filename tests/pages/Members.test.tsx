@@ -5,8 +5,38 @@ import Members from '@/pages/Members';
 import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
 
 const MEMBERS: Member[] = [
-  { id: 1, name: '傅開基', gender: 'M', birthday: null, parentId: null, parentName: null, generation: 1, spouseName: '林氏', job: '務農', phoneNo: null, cellphone: null, branchId: null, branchName: null, deceased: true },
-  { id: 2, name: '傅文宗', gender: 'M', birthday: '1580-06-15', parentId: 1, parentName: '傅開基', generation: 2, spouseName: '陳氏', job: null, phoneNo: null, cellphone: '0912345678', branchId: 1, branchName: '第 1 分支', deceased: false },
+  {
+    id: 1,
+    name: '傅開基',
+    gender: 'M',
+    birthday: null,
+    parentId: null,
+    parentName: null,
+    generation: 1,
+    spouseName: '林氏',
+    job: '務農',
+    phoneNo: null,
+    cellphone: null,
+    branchId: null,
+    branchName: null,
+    deceased: true,
+  },
+  {
+    id: 2,
+    name: '傅文宗',
+    gender: 'M',
+    birthday: '1580-06-15',
+    parentId: 1,
+    parentName: '傅開基',
+    generation: 2,
+    spouseName: '陳氏',
+    job: null,
+    phoneNo: null,
+    cellphone: '0912345678',
+    branchId: 1,
+    branchName: '第 1 分支',
+    deceased: false,
+  },
 ];
 
 function mockApi() {
@@ -16,11 +46,6 @@ function mockApi() {
     searchMembers: vi.fn().mockResolvedValue([{ id: 1, name: '傅開基', generation: 1 }]),
   });
 }
-
-test('shows a hint when not running inside Electron', () => {
-  renderWithAntd(<Members />);
-  expect(screen.getByText(/請以 npm run electron:dev 開啟/)).toBeInTheDocument();
-});
 
 test('lists members with parent, spouse and branch', async () => {
   mockApi();
@@ -81,8 +106,8 @@ test('edits an existing member', async () => {
   );
 });
 
-// Regression: the form instance is shared between openings, so values typed into one dialog
-// used to leak into the next one (e.g. editing showed the name typed while adding a child).
+// 回歸測試：表單實例曾在每次開啟之間共用，上一次輸入的內容會殘留到下一次
+// （例如修改成員時，顯示的是剛才新增子女時輸入的姓名）。
 test('opening the edit form after another form shows the edited member, not leftover input', async () => {
   mockApi();
   renderWithAntd(<Members />);
@@ -100,4 +125,49 @@ test('opening the edit form after another form shows the edited member, not left
 
   expect(within(dialog).getByLabelText('姓名')).toHaveValue('傅文宗');
   expect(within(dialog).getByLabelText('配偶')).toHaveValue('陳氏');
+});
+
+test('imports members from Excel right from the member list', async () => {
+  const api = mockElectronAPI({
+    previewMemberImport: vi.fn().mockResolvedValue({
+      token: 't1',
+      fileName: '名單.xlsx',
+      rows: [],
+      newCount: 1,
+      skipCount: 0,
+      errorCount: 0,
+      newBranches: [],
+    }),
+    confirmMemberImport: vi.fn().mockResolvedValue(1),
+  });
+  renderWithAntd(<Members />);
+
+  await userEvent.hover(screen.getByRole('button', { name: /Excel 匯入/ }));
+  await userEvent.click(await screen.findByText('選擇 Excel 檔案匯入'));
+  expect(api.previewMemberImport).toHaveBeenCalled();
+  expect(await screen.findByText(/名單\.xlsx/)).toBeInTheDocument();
+});
+
+test('deletes a member after confirming, and explains why when it is refused', async () => {
+  const api = mockApi();
+  api.deleteMember
+    .mockRejectedValueOnce(
+      new Error("Error invoking remote method 'deleteMember': Error: 傅開基 還有子女資料，請先刪除子女或修改子女的父母")
+    )
+    .mockResolvedValueOnce(undefined);
+  renderWithAntd(<Members />);
+
+  const rootRow = (await screen.findByText('林氏')).closest('tr')!;
+  await userEvent.click(within(rootRow).getByRole('button', { name: '刪除' }));
+  await userEvent.click(await screen.findByRole('button', { name: '刪 除' }));
+  expect(api.deleteMember).toHaveBeenCalledWith(1);
+  expect(await screen.findByText('刪除失敗：傅開基 還有子女資料，請先刪除子女或修改子女的父母')).toBeInTheDocument();
+
+  const childRow = screen.getByText('陳氏').closest('tr')!;
+  await userEvent.click(within(childRow).getByRole('button', { name: '刪除' }));
+  const confirmButtons = await screen.findAllByRole('button', { name: '刪 除' });
+  await userEvent.click(confirmButtons[confirmButtons.length - 1]);
+  expect(await screen.findByText('已刪除 傅文宗')).toBeInTheDocument();
+  // 刪除後重新載入名單
+  expect(api.listMembers).toHaveBeenCalledTimes(2);
 });

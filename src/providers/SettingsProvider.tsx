@@ -1,6 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { DEFAULT_SETTINGS } from '@shared/settings';
 import type { AppSettings } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
 
 interface SettingsValue {
   settings: AppSettings;
@@ -16,27 +17,22 @@ const SettingsContext = createContext<SettingsValue>({
   update: async () => DEFAULT_SETTINGS,
 });
 
-// 全系統共用的設定（文字大小、提醒天數）；純瀏覽器模式使用預設值
-export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [loaded, setLoaded] = useState(!window.electronAPI);
-
-  useEffect(() => {
-    window.electronAPI
-      ?.getSettings()
-      .then(setSettings)
-      .finally(() => setLoaded(true));
-  }, []);
+// 全系統共用的設定（文字大小、提醒天數）；純瀏覽器模式、或讀取失敗時使用預設值
+export const SettingsProvider = ({ children }: { children: ReactNode }) => {
+  const { data: stored, loading } = useApiQuery((api) => api.getSettings(), [], { errorPrefix: '讀取系統設定失敗' });
+  // 本次執行中儲存過的設定，優先於啟動時讀到的
+  const [saved, setSaved] = useState<AppSettings | null>(null);
 
   const update = useCallback(async (patch: Partial<AppSettings>) => {
     const api = window.electronAPI;
     if (!api) throw new Error('需要在桌面版中使用');
     const next = await api.updateSettings(patch);
-    setSettings(next);
+    setSaved(next);
     return next;
   }, []);
 
-  return <SettingsContext.Provider value={{ settings, loaded, update }}>{children}</SettingsContext.Provider>;
+  const settings = saved ?? stored ?? DEFAULT_SETTINGS;
+  return <SettingsContext.Provider value={{ settings, loaded: !loading, update }}>{children}</SettingsContext.Provider>;
 };
 
 export function useSettings(): SettingsValue {

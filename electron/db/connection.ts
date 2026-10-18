@@ -1,26 +1,92 @@
 import fs from 'fs';
-import initSqlJs, { Database, SqlValue } from 'sql.js';
+import path from 'path';
+import initSqlJs, { type Database, type SqlValue } from 'sql.js';
 
 let instance: Database;
 let dbFilePath: string;
 
-// Opens the database file, creating an empty in-memory database when it does not exist yet.
-// Returns true when the file is new (caller is expected to create the schema and seed it).
+// 開啟資料庫檔案；檔案不存在時建立一個空的記憶體資料庫。
+// 回傳 true 表示是新檔案（呼叫端要負責建立資料表）。
 export async function openDatabase(filePath: string): Promise<boolean> {
   const SQL = await initSqlJs();
   dbFilePath = filePath;
   const isNew = !fs.existsSync(filePath);
   instance = isNew ? new SQL.Database() : new SQL.Database(fs.readFileSync(filePath));
+  enableForeignKeys();
   return isNew;
+}
+
+// 檢查檔案內容是不是本系統的資料庫（還原備份前使用）：能以 SQLite 開啟，且有宗親資料表
+export async function isClanDatabase(data: Uint8Array): Promise<boolean> {
+  const SQL = await initSqlJs();
+  try {
+    const candidate = new SQL.Database(data);
+    try {
+      const result = candidate.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'members'");
+      return result.length > 0;
+    } finally {
+      candidate.close();
+    }
+  } catch {
+    return false;
+  }
 }
 
 export function db(): Database {
   return instance;
 }
 
-// Call this after any INSERT/UPDATE/DELETE — sql.js only keeps changes in memory otherwise.
+export function databaseFilePath(): string {
+  return dbFilePath;
+}
+
+// SQLite 預設不檢查 REFERENCES，要每次連線自己開啟
+function enableForeignKeys(): void {
+  instance.run('PRAGMA foreign_keys = ON;');
+}
+
+// 改資料庫結構等有風險的操作，可以暫時關閉外鍵檢查
+export function withoutForeignKeys(work: () => void): void {
+  instance.run('PRAGMA foreign_keys = OFF;');
+  try {
+    work();
+  } finally {
+    enableForeignKeys();
+  }
+}
+
+// 原子寫入：先完整寫到暫存檔並確實寫入磁碟，再用 rename 取代原檔。
+// 寫到一半遇到停電或當機時，原本的資料庫檔案仍然完好。
+export function writeFileAtomic(filePath: string, data: Uint8Array): void {
+  const tmpPath = `${filePath}.tmp`;
+  const fd = fs.openSync(tmpPath, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmpPath, filePath);
+}
+
+// 任何 INSERT / UPDATE / DELETE 之後都要呼叫：sql.js 的資料只存在記憶體，不存檔就會遺失。
 export function saveDatabase(): void {
-  fs.writeFileSync(dbFilePath, Buffer.from(db().export()));
+  const data = db().export();
+  // sql.js 的 export() 會重新開啟連線，PRAGMA 設定會被重設，要再開一次外鍵檢查
+  enableForeignKeys();
+  writeFileAtomic(dbFilePath, data);
+}
+
+// 在同一個資料夾的 backups/ 底下留一份目前資料庫的副本，例如改版升級前。回傳副本路徑。
+export function snapshotDatabase(label: string): string {
+  const dir = path.join(path.dirname(dbFilePath), 'backups');
+  fs.mkdirSync(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+  const target = path.join(dir, `${label}-${stamp}.db`);
+  const data = db().export();
+  enableForeignKeys();
+  writeFileAtomic(target, data);
+  return target;
 }
 
 export function queryScalar(sql: string, params: SqlValue[] = []): SqlValue {
@@ -60,7 +126,7 @@ export function setMeta(key: string, value: string): void {
   ]);
 }
 
-// sql.js has no transaction helper — run a batch atomically so a failed write never leaves half a roster.
+// sql.js 沒有交易輔助函式：整批寫入要嘛全部成功、要嘛全部取消，不會只寫進半份名單。
 export function inTransaction<T>(work: () => T): T {
   db().run('BEGIN');
   try {

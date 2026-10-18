@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ['master']
   pull_request:
-    branches: [ "master" ]
+    branches: ['master']
   # 也可以在 GitHub 的 Actions 頁面手動執行
   workflow_dispatch:
 
@@ -42,6 +42,12 @@ jobs:
         env:
           # 測試與編譯不需要 Electron 執行檔，跳過下載以加快速度
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Type check (app)
         run: npx tsc --noEmit

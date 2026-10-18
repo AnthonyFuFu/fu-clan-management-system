@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Select } from 'antd';
 import type { MemberSummary } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
 
 interface MemberSelectProps {
   // value / onChange 由 antd Form.Item 注入
@@ -26,15 +27,11 @@ const MemberSelect = ({
   placeholder = '輸入姓名搜尋',
   allowClear,
 }: MemberSelectProps) => {
-  const [options, setOptions] = useState<MemberSummary[]>([]);
-
-  const search = (keyword: string) => {
-    window.electronAPI?.searchMembers(keyword).then(setOptions);
-  };
-
-  useEffect(() => {
-    search('');
-  }, []);
+  const [keyword, setKeyword] = useState('');
+  // 打字很快時只採用最後一次搜尋的結果
+  const { data: options = [] } = useApiQuery((api) => api.searchMembers(keyword), [keyword], {
+    errorPrefix: '搜尋宗親失敗',
+  });
 
   const merged =
     initialOption && !options.some((m) => m.id === initialOption.id) ? [initialOption, ...options] : options;
@@ -46,7 +43,7 @@ const MemberSelect = ({
         onChange?.(id ?? null);
         onSelectMember?.(merged.find((m) => m.id === id) ?? null);
       }}
-      showSearch={{ filterOption: false, onSearch: search }}
+      showSearch={{ filterOption: false, onSearch: setKeyword }}
       allowClear={allowClear}
       placeholder={placeholder}
       options={merged.map((m) => ({

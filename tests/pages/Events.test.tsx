@@ -1,13 +1,29 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ClanEvent } from '@shared/types';
-import { UpcomingEventsProvider } from '@/components/EventReminder/UpcomingEventsContext';
+import { UpcomingEventsProvider } from '@/providers/UpcomingEventsProvider';
 import Events from '@/pages/Events';
 import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
 
 const EVENTS: ClanEvent[] = [
-  { id: 1, title: '秋季祭祖', eventDate: '2026-10-20', startTime: '09:00', endTime: '12:00', location: '傅氏宗祠', note: '請著正式服裝' },
-  { id: 2, title: '理監事會議', eventDate: '2026-10-20', startTime: '19:00', endTime: null, location: null, note: null },
+  {
+    id: 1,
+    title: '秋季祭祖',
+    eventDate: '2026-10-20',
+    startTime: '09:00',
+    endTime: '12:00',
+    location: '傅氏宗祠',
+    note: '請著正式服裝',
+  },
+  {
+    id: 2,
+    title: '理監事會議',
+    eventDate: '2026-10-20',
+    startTime: '19:00',
+    endTime: null,
+    location: null,
+    note: null,
+  },
 ];
 
 beforeEach(() => {

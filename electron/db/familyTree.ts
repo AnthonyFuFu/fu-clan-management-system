@@ -2,10 +2,10 @@ import type { FamilyRelation, FamilyTreeNode, FamilyTreeResult } from '../../sha
 import { queryAll, queryOne } from './connection';
 import type { MemberRow } from './members';
 
-// How many generations up/down a family tree query is allowed to walk.
+// 世系圖往上、往下最多查幾代。
 const MAX_GENERATION_SPAN = 3;
 
-// Degree-of-kinship safety cap — nodes further than this are never returned even if MAX_GENERATION_SPAN grows later.
+// 親等上限：即使以後把 MAX_GENERATION_SPAN 調大，超過這個親等的人也不會回傳。
 const MAX_DISPLAY_DISTANCE = 6;
 
 function toNode(row: MemberRow, relation: FamilyRelation, distance: number): FamilyTreeNode {
@@ -25,9 +25,8 @@ function toNode(row: MemberRow, relation: FamilyRelation, distance: number): Fam
   };
 }
 
-// Other children of the same parent — siblings (or, when called for an ancestor further up
-// the chain, uncles/aunts/granduncles). Only called for chain nodes whose own parent is still
-// within the displayed ancestor range, so the resulting nodes always have a connector to draw to.
+// 同一位父母的其他子女：兄弟姊妹（對上方的祖先呼叫時，就是伯叔姑、叔公等）。
+// 只對「自己的父母也在顯示範圍內」的直系節點呼叫，所以找到的人一定有連接線可以畫。
 function getSiblingsOf(node: FamilyTreeNode): FamilyTreeNode[] {
   if (node.parentId === null) {
     return [];
@@ -45,15 +44,11 @@ function getAncestors(startId: number, maxLevels: number): FamilyTreeNode[] {
   let currentId: number | null = startId;
 
   for (let distance = 1; distance <= maxLevels; distance += 1) {
-    const current: MemberRow | null = queryOne<MemberRow>('SELECT * FROM members WHERE id = ?', [
-      currentId as number,
-    ]);
+    const current: MemberRow | null = queryOne<MemberRow>('SELECT * FROM members WHERE id = ?', [currentId as number]);
     if (!current || current.parent_id === null) {
       break;
     }
-    const parent: MemberRow | null = queryOne<MemberRow>('SELECT * FROM members WHERE id = ?', [
-      current.parent_id,
-    ]);
+    const parent: MemberRow | null = queryOne<MemberRow>('SELECT * FROM members WHERE id = ?', [current.parent_id]);
     if (!parent) {
       break;
     }
@@ -73,10 +68,7 @@ function getDescendants(startId: number, maxLevels: number): FamilyTreeNode[] {
       break;
     }
     const placeholders = currentLevelIds.map(() => '?').join(',');
-    const children = queryAll<MemberRow>(
-      `SELECT * FROM members WHERE parent_id IN (${placeholders})`,
-      currentLevelIds
-    );
+    const children = queryAll<MemberRow>(`SELECT * FROM members WHERE parent_id IN (${placeholders})`, currentLevelIds);
     if (children.length === 0) {
       break;
     }
@@ -98,11 +90,9 @@ export function getFamilyTree(memberId: number): FamilyTreeResult | null {
   const ancestors = getAncestors(memberId, span);
   const descendants = getDescendants(memberId, span);
 
-  // Collateral kin (siblings / aunts-uncles / granduncles): only for chain nodes whose own
-  // parent is still within the displayed ancestor range, so every sibling has a connector.
-  const siblings = [focus, ...ancestors]
-    .filter((node) => node.distance < span)
-    .flatMap((node) => getSiblingsOf(node));
+  // 旁系親屬（兄弟姊妹、伯叔姑、叔公等）：只對「自己的父母也在顯示範圍內」的直系節點查詢，
+  // 這樣每位兄弟姊妹都有連接線。
+  const siblings = [focus, ...ancestors].filter((node) => node.distance < span).flatMap((node) => getSiblingsOf(node));
 
   return { focus, nodes: [focus, ...ancestors, ...descendants, ...siblings] };
 }

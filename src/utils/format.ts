@@ -5,6 +5,11 @@ export function formatMoney(amount: number): string {
   return `${amount.toLocaleString('zh-TW')} 元`;
 }
 
+// 帶正負號的金額：「+1,000 元」「−500 元」（年度結餘等增減）
+export function formatSignedMoney(amount: number): string {
+  return `${amount >= 0 ? '+' : '−'}${formatMoney(Math.abs(amount))}`;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -25,6 +30,11 @@ export function savedFileMessage(savedTo: string | null): string | null {
   const file = parts[parts.length - 1];
   const folder = parts[parts.length - 2];
   return folder ? `已儲存：${file}（${folder} 資料夾）` : `已儲存：${file}`;
+}
+
+// 日期 YYYY-MM-DD → 「10/18」（列表裡只需要月日時）
+export function formatMonthDay(date: string): string {
+  return date.slice(5).replace('-', '/');
 }
 
 // 活動時間：「09:00–12:00」、「14:00 起」或「整天」

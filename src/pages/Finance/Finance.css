@@ -24,14 +24,14 @@
 }
 
 .finance-amount--income {
-  color: #3f8600;
+  color: var(--color-income);
 }
 
 .finance-amount--expense {
-  color: #cf1322;
+  color: var(--color-expense);
 }
 
-/* Cards in the same row stretch to equal height */
+/* 同一列的卡片拉成一樣高 */
 .finance-card {
   height: 100%;
 }

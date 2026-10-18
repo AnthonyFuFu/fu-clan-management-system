@@ -1,36 +1,43 @@
 import path from 'path';
-import { openDatabase, saveDatabase, setMeta } from './connection';
+import { openDatabase, saveDatabase } from './connection';
 import {
   createSchema,
   migrateEventColumns,
   migrateFinanceIfNeeded,
+  migrateLegacyMembers,
   migrateMemberColumns,
-  migrateMembersIfNeeded,
-  SEED_VERSION,
 } from './schema';
-import { seedData } from './seed';
+import { seedDemoEvents, seedDemoMembers } from './seed';
 
-export async function initDatabase(userDataPath: string): Promise<void> {
+export interface InitOptions {
+  // 新安裝時建立範例宗親、活動與帳目。正式版為 false（從空白資料庫開始），開發模式與測試為 true。
+  seedDemo?: boolean;
+}
+
+export async function initDatabase(userDataPath: string, { seedDemo = false }: InitOptions = {}): Promise<void> {
   const isNew = await openDatabase(path.join(userDataPath, 'clan.db'));
   createSchema();
   if (isNew) {
-    seedData();
-    setMeta('seed_version', SEED_VERSION);
+    if (seedDemo) {
+      seedDemoMembers();
+      seedDemoEvents();
+    }
     saveDatabase();
   } else {
-    migrateMembersIfNeeded();
+    migrateLegacyMembers(seedDemo);
   }
   migrateMemberColumns();
   migrateEventColumns();
-  migrateFinanceIfNeeded();
+  migrateFinanceIfNeeded(seedDemo);
 }
 
 export { saveDatabase } from './connection';
 export { getDashboardStats } from './dashboard';
-export { searchMembers, listMembers, createMember, updateMember, getBranches } from './members';
+export { searchMembers, listMembers, createMember, updateMember, deleteMember, getBranches } from './members';
 export { getFamilyTree } from './familyTree';
 export { listEvents, saveEvent, deleteEvent } from './events';
 export { getSettings, updateSettings } from './settings';
+export { listDocuments } from './documents';
 export {
   getFinanceYears,
   getFinanceSummary,

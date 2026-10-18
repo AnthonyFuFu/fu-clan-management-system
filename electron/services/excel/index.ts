@@ -2,11 +2,11 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import fs from 'fs';
-import type { MemberImportPreview } from '../../shared/types';
-import { importMembers } from '../db/members';
-import { askOpenPaths, EXCEL_FILTERS, saveWorkbook } from './dialogs';
-import { buildDuesStatusWorkbook, buildTransactionsWorkbook } from './excel/exports';
-import { buildMemberTemplateWorkbook, MemberImportPlan, planMemberImport } from './excel/memberImport';
+import type { MemberImportPreview } from '../../../shared/types';
+import { importMembers } from '../../db/members';
+import { askOpenPaths, EXCEL_FILTERS, saveWorkbook } from '../dialogs';
+import { buildDuesStatusWorkbook, buildTransactionsWorkbook } from './exports';
+import { buildMemberTemplateWorkbook, type MemberImportPlan, planMemberImport } from './memberImport';
 
 export function exportDuesStatus(year: number): Promise<string | null> {
   return saveWorkbook(buildDuesStatusWorkbook(year), `${year}年度會費繳納名單.xlsx`);
@@ -20,8 +20,8 @@ export function downloadMemberImportTemplate(): Promise<string | null> {
   return saveWorkbook(buildMemberTemplateWorkbook(), '宗親名單匯入範本.xlsx');
 }
 
-// The checked plan waits here between preview and confirm, so what gets imported is exactly what the
-// user saw — the renderer only sends back the token, never the rows themselves.
+// 預覽與確認之間，檢查過的匯入計畫暫存在這裡：匯入的內容一定就是使用者看到的那一份，
+// 畫面只送回 token，不會送回資料本身。
 let pending: { token: string; plan: MemberImportPlan } | null = null;
 
 export async function previewMemberImport(): Promise<MemberImportPreview | null> {

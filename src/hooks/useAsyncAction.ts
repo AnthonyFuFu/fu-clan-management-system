@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { App } from 'antd';
-import { errorMessage } from '@/utils/error';
+import { errorMessage } from '@shared/errors';
 
 // 包裝寫入類操作：成功顯示提示並回傳 true，失敗顯示錯誤原因並回傳 false。
 // success 可以依結果產生訊息，例如 (count) => `已開立，共 ${count} 人`；
@@ -10,7 +10,7 @@ export function useAsyncAction() {
   const { message } = App.useApp();
 
   return useCallback(
-    async <T,>(
+    async <T>(
       action: () => Promise<T>,
       success: string | ((result: T) => string | null),
       errorPrefix = '操作失敗'

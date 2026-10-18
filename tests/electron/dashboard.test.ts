@@ -1,10 +1,8 @@
 // @vitest-environment node
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import { toDateString } from '@shared/events';
 import type { MemberInput } from '@shared/types';
 import * as database from '../../electron/db';
+import { DEMO, tempDir } from '../helpers/database';
 
 function input(overrides: Partial<MemberInput>): MemberInput {
   return {
@@ -31,7 +29,7 @@ function birthdayIn(days: number, birthYear: number): string {
 }
 
 beforeEach(async () => {
-  await database.initDatabase(fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-')));
+  await database.initDatabase(tempDir(), DEMO);
 });
 
 test('member totals add up across living / deceased, gender, generation and branch', () => {
@@ -53,7 +51,9 @@ test('lists upcoming birthdays of living members, nearest first', () => {
   database.createMember(input({ name: '傅已故', birthday: birthdayIn(1, birthYear), deceased: true }));
   database.createMember(input({ name: '傅太遠', birthday: birthdayIn(60, birthYear), cellphone: '0912000002' }));
 
-  const birthdays = database.getDashboardStats().upcomingBirthdays.filter((b) => b.name.startsWith('傅') && b.generation === 20);
+  const birthdays = database
+    .getDashboardStats()
+    .upcomingBirthdays.filter((b) => b.name.startsWith('傅') && b.generation === 20);
   expect(birthdays.map((b) => b.name)).toEqual(['傅今天', '傅十天']);
   expect(birthdays[0]).toMatchObject({ daysUntil: 0, age: 30 });
   expect(birthdays[1].daysUntil).toBe(10);
@@ -70,12 +70,44 @@ test('counts living members missing a birthday or any phone number', () => {
 
 test('includes this year’s finance summary and the latest transactions', () => {
   const year = new Date().getFullYear();
-  database.saveTransaction({ type: 'expense', category: '婚喪慰問', item: '最新一筆', amount: 1200, txDate: `${year + 1}-01-01`, note: null });
+  database.saveTransaction({
+    type: 'expense',
+    category: '婚喪慰問',
+    item: '最新一筆',
+    amount: 1200,
+    txDate: `${year + 1}-01-01`,
+    note: null,
+  });
   const stats = database.getDashboardStats();
   expect(stats.finance.year).toBe(year);
   expect(stats.recentTransactions[0].item).toBe('最新一筆');
   expect(stats.recentTransactions.length).toBeLessThanOrEqual(5);
-  expect(stats.financeTotal).toBe(database.getFinanceSummary(year).closingBalance - 1200);
+});
+
+test('the current balance counts only money received or spent up to today', () => {
+  const today = toDateString(new Date());
+  const nextYear = new Date().getFullYear() + 1;
+  const before = database.getDashboardStats().financeTotal;
+
+  database.saveTransaction({
+    type: 'expense',
+    category: '祭祖',
+    item: '明年的支出',
+    amount: 1200,
+    txDate: `${nextYear}-01-01`,
+    note: null,
+  });
+  expect(database.getDashboardStats().financeTotal).toBe(before);
+
+  database.saveTransaction({
+    type: 'income',
+    category: '樂捐',
+    item: '今天的樂捐',
+    amount: 500,
+    txDate: today,
+    note: null,
+  });
+  expect(database.getDashboardStats().financeTotal).toBe(before + 500);
 });
 
 test('upcoming events are the not-yet-finished ones within 30 days', () => {

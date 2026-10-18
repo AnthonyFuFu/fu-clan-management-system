@@ -6,13 +6,22 @@ import initSqlJs from 'sql.js';
 import { toDateString } from '@shared/events';
 import type { ClanEventInput } from '@shared/types';
 import * as database from '../../electron/db';
+import { DEMO, tempDir } from '../helpers/database';
 
 function input(overrides: Partial<ClanEventInput>): ClanEventInput {
-  return { title: '春季祭祖', eventDate: '2026-04-04', startTime: '09:00', endTime: '12:00', location: '傅氏宗祠', note: null, ...overrides };
+  return {
+    title: '春季祭祖',
+    eventDate: '2026-04-04',
+    startTime: '09:00',
+    endTime: '12:00',
+    location: '傅氏宗祠',
+    note: null,
+    ...overrides,
+  };
 }
 
 beforeEach(async () => {
-  await database.initDatabase(fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-')));
+  await database.initDatabase(tempDir(), DEMO);
 });
 
 test('a new install comes with sample events around today', () => {
@@ -51,7 +60,7 @@ test('rejects invalid events', () => {
 
 test('existing databases get the new event columns and keep their events', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-'));
-  await database.initDatabase(dir);
+  await database.initDatabase(dir, DEMO);
   const SQL = await initSqlJs();
   const file = path.join(dir, 'clan.db');
   const legacy = new SQL.Database(fs.readFileSync(file));
@@ -63,7 +72,7 @@ test('existing databases get the new event columns and keep their events', async
   `);
   fs.writeFileSync(file, Buffer.from(legacy.export()));
 
-  await database.initDatabase(dir);
+  await database.initDatabase(dir, DEMO);
   expect(database.listEvents('2026-10-01', '2026-10-31')).toEqual([
     { id: 1, title: '活動 1', eventDate: '2026-10-05', startTime: null, endTime: null, location: null, note: null },
   ]);

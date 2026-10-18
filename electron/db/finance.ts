@@ -8,6 +8,7 @@ import type {
   TransactionType,
 } from '../../shared/types';
 import { db, inTransaction, queryAll, queryOne, queryScalar } from './connection';
+import { assertDate } from './validation';
 
 function assertYear(year: number): void {
   if (!Number.isInteger(year) || year < 1900 || year > 2200) {
@@ -21,27 +22,36 @@ function assertAmount(amount: number, allowZero: boolean): void {
   }
 }
 
-function assertDate(date: string): void {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error(`Invalid date: ${date}`);
-  }
+// 會費收入算在「會費年度」而不是繳費日期，讓每一年的數字跟該年度的名單對得上。
+export function getBalanceUntil(year: number): number {
+  const dues = Number(
+    queryScalar('SELECT COALESCE(SUM(amount_due), 0) FROM dues_payments WHERE paid_date IS NOT NULL AND year <= ?', [
+      year,
+    ])
+  );
+  const ledger = Number(
+    queryScalar(
+      `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) FROM finance_transactions WHERE tx_date <= ?`,
+      [`${year}-12-31`]
+    )
+  );
+  return dues + ledger;
 }
 
-// Dues collected are attributed to the dues year (not the payment date) so each year's
-// figures line up with that year's roster.
-export function getBalanceUntil(year: number | null): number {
-  const duesFilter = year === null ? '' : 'AND year <= ?';
-  const txFilter = year === null ? '' : 'WHERE tx_date <= ?';
+// 截至某一天手上實際有的錢：會費依繳費日期、收支依交易日期計算，
+// 所以已登記但還沒到的未來收支不會算進來（首頁儀表板「目前結餘」用）
+export function getBalanceAsOf(date: string): number {
+  assertDate(date);
   const dues = Number(
     queryScalar(
-      `SELECT COALESCE(SUM(amount_due), 0) FROM dues_payments WHERE paid_date IS NOT NULL ${duesFilter}`,
-      year === null ? [] : [year]
+      'SELECT COALESCE(SUM(amount_due), 0) FROM dues_payments WHERE paid_date IS NOT NULL AND paid_date <= ?',
+      [date]
     )
   );
   const ledger = Number(
     queryScalar(
-      `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) FROM finance_transactions ${txFilter}`,
-      year === null ? [] : [`${year}-12-31`]
+      `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) FROM finance_transactions WHERE tx_date <= ?`,
+      [date]
     )
   );
   return dues + ledger;
@@ -65,7 +75,7 @@ export function getFinanceYears(): number[] {
 export function getFinanceSummary(year: number): FinanceSummary {
   assertYear(year);
   const dues = queryOne<{ memberCount: number; paidCount: number; expected: number; collected: number }>(
-    // Exempt rows (amount_due = 0) have nothing to collect, so they count toward neither headcount.
+    // 免繳（amount_due = 0）沒有要收的錢，已繳、未繳人數都不算進去。
     `SELECT COALESCE(SUM(CASE WHEN amount_due > 0 THEN 1 ELSE 0 END), 0) AS memberCount,
             COALESCE(SUM(CASE WHEN amount_due > 0 AND paid_date IS NOT NULL THEN 1 ELSE 0 END), 0) AS paidCount,
             COALESCE(SUM(amount_due), 0) AS expected,
@@ -114,8 +124,8 @@ export function getDues(year: number): DuesRecord[] {
   );
 }
 
-// Roster for a new year: copy the most recent earlier roster (keeps manual additions/removals),
-// otherwise fall back to members within the dues age range that year. Deceased members are never included.
+// 新年度的名單：沿用最近一個年度的名單（保留手動加入、移除的結果）；
+// 沒有前一年度時，列入當年年齡在會費範圍內的人。已故的人一律不列入。
 function defaultDuesRoster(year: number): number[] {
   const previousYear = queryScalar('SELECT MAX(year) FROM dues_payments WHERE year < ?', [year]);
   if (previousYear !== null) {
@@ -133,7 +143,7 @@ function defaultDuesRoster(year: number): number[] {
   ).map((row) => row.id);
 }
 
-// Returns how many members were put on the roster.
+// 回傳列入名單的人數。
 export function createDuesYear(year: number, amount: number): number {
   assertYear(year);
   assertAmount(amount, true);
@@ -160,7 +170,7 @@ export function removeDues(id: number): void {
   db().run('DELETE FROM dues_payments WHERE id = ?', [id]);
 }
 
-// paidDate === null marks the records unpaid again.
+// paidDate 為 null 表示改回未繳。
 export function setDuesPaid(ids: number[], paidDate: string | null): void {
   if (paidDate !== null) {
     assertDate(paidDate);
@@ -200,10 +210,14 @@ function validateTransaction(tx: FinanceTransactionInput): void {
 
 export function insertTransaction(tx: FinanceTransactionInput): void {
   validateTransaction(tx);
-  db().run(
-    'INSERT INTO finance_transactions (type, category, item, amount, tx_date, note) VALUES (?, ?, ?, ?, ?, ?)',
-    [tx.type, tx.category.trim(), tx.item.trim(), tx.amount, tx.txDate, tx.note || null]
-  );
+  db().run('INSERT INTO finance_transactions (type, category, item, amount, tx_date, note) VALUES (?, ?, ?, ?, ?, ?)', [
+    tx.type,
+    tx.category.trim(),
+    tx.item.trim(),
+    tx.amount,
+    tx.txDate,
+    tx.note || null,
+  ]);
 }
 
 export function saveTransaction(tx: FinanceTransactionInput): void {
@@ -222,8 +236,8 @@ export function deleteTransaction(id: number): void {
   db().run('DELETE FROM finance_transactions WHERE id = ?', [id]);
 }
 
-// One row per living member for the dues export — including members not on that year's roster
-// (amountDue is null for them), so the sheet answers "has every living clan member paid?".
+// 會費匯出：每位在世宗親一列，包含不在該年度名單上的人（amountDue 為 null），
+// 讓這份表能回答「每位在世宗親都繳了嗎？」。
 export interface LivingDuesStatus {
   name: string;
   generation: number;

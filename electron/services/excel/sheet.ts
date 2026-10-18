@@ -34,7 +34,9 @@ export function tableSheet(columns: Column[], rows: CellValue[][], prefillRows =
   });
   sheet['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastFormattedRow, c: columns.length - 1 } });
   if (rows.length > 0) {
-    sheet['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: columns.length - 1 } }) };
+    sheet['!autofilter'] = {
+      ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: columns.length - 1 } }),
+    };
   }
   return sheet;
 }

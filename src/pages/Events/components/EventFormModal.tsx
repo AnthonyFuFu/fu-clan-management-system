@@ -1,8 +1,7 @@
-import React from 'react';
 import { Col, DatePicker, Form, Input, Modal, Row, TimePicker } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import type { ClanEvent, ClanEventInput } from '@shared/types';
-import { remountOnOpen } from '@/utils/remountOnOpen';
+import { remountOnOpen } from '@/hoc/remountOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 
 const TIME_FORMAT = 'HH:mm';
@@ -72,7 +71,11 @@ const EventFormModal = ({ state, onClose, onSubmit }: EventFormModalProps) => {
             })
           }
         >
-          <Form.Item name="title" label="活動名稱" rules={[{ required: true, whitespace: true, message: '請輸入活動名稱' }]}>
+          <Form.Item
+            name="title"
+            label="活動名稱"
+            rules={[{ required: true, whitespace: true, message: '請輸入活動名稱' }]}
+          >
             <Input maxLength={100} placeholder="例如：秋季祭祖" />
           </Form.Item>
 

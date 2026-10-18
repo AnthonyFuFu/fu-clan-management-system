@@ -1,19 +1,15 @@
 // @vitest-environment node
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import initSqlJs from 'sql.js';
 import * as database from '../../electron/db';
+import { DEMO, tempDir } from '../helpers/database';
 
 const YEAR = new Date().getFullYear();
 
-function tempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-'));
-}
-
 describe('fresh install', () => {
   beforeAll(async () => {
-    await database.initDatabase(tempDir());
+    await database.initDatabase(tempDir(), DEMO);
   });
 
   test('seeds this year’s dues roster with members aged 20–99', () => {
@@ -49,7 +45,14 @@ describe('fresh install', () => {
 
   test('transactions can be added, edited and deleted', () => {
     const balance = database.getFinanceSummary(YEAR).closingBalance;
-    database.saveTransaction({ type: 'expense', category: '婚喪慰問', item: '白包', amount: 2000, txDate: `${YEAR}-09-01`, note: null });
+    database.saveTransaction({
+      type: 'expense',
+      category: '婚喪慰問',
+      item: '白包',
+      amount: 2000,
+      txDate: `${YEAR}-09-01`,
+      note: null,
+    });
     const tx = database.getTransactions(YEAR).find((row) => row.item === '白包')!;
     expect(database.getFinanceSummary(YEAR).closingBalance).toBe(balance - 2000);
 
@@ -62,10 +65,24 @@ describe('fresh install', () => {
 
   test('rejects invalid input', () => {
     expect(() =>
-      database.saveTransaction({ type: 'expense', category: '祭祖', item: 'x', amount: -5, txDate: `${YEAR}-01-01`, note: null })
+      database.saveTransaction({
+        type: 'expense',
+        category: '祭祖',
+        item: 'x',
+        amount: -5,
+        txDate: `${YEAR}-01-01`,
+        note: null,
+      })
     ).toThrow();
     expect(() =>
-      database.saveTransaction({ type: 'expense', category: '祭祖', item: 'x', amount: 100, txDate: '2026/01/01', note: null })
+      database.saveTransaction({
+        type: 'expense',
+        category: '祭祖',
+        item: 'x',
+        amount: 100,
+        txDate: '2026/01/01',
+        note: null,
+      })
     ).toThrow();
     // 同一人同一年度只能在名單上出現一次
     const member = database.getDues(YEAR)[0];
@@ -88,7 +105,7 @@ describe('upgrading a database from before the finance feature', () => {
   test('carries the old finance_records total over as an opening balance', async () => {
     const dir = tempDir();
     // 先建立一個新資料庫，再把它改回舊版：拿掉財務表、放回只有總額的 finance_records
-    await database.initDatabase(dir);
+    await database.initDatabase(dir, DEMO);
     const SQL = await initSqlJs();
     const file = path.join(dir, 'clan.db');
     const legacy = new SQL.Database(fs.readFileSync(file));
@@ -101,11 +118,9 @@ describe('upgrading a database from before the finance feature', () => {
     `);
     fs.writeFileSync(file, Buffer.from(legacy.export()));
 
-    await database.initDatabase(dir);
+    await database.initDatabase(dir, DEMO);
 
-    const opening = database
-      .getTransactions(YEAR - 1)
-      .find((row) => row.category === '上期結轉');
+    const opening = database.getTransactions(YEAR - 1).find((row) => row.category === '上期結轉');
     expect(opening?.amount).toBe(50000);
   });
 });

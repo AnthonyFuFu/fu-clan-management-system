@@ -1,14 +1,24 @@
 import * as XLSX from 'xlsx';
 import type { Gender, MemberImportPreview, MemberImportRow } from '../../../shared/types';
-import { queryAll } from '../../db/connection';
-import { getBranches, ImportPlanItem, validateMemberFields } from '../../db/members';
-import { Column, tableSheet, workbook } from './sheet';
+import { getBranches, type ImportPlanItem, listAllMemberSummaries, validateMemberFields } from '../../db/members';
+import { type Column, tableSheet, workbook } from './sheet';
 
 // ---------------------------------------------------------------------------
 // 範本
 // ---------------------------------------------------------------------------
 
-type Field = 'name' | 'gender' | 'generation' | 'parentName' | 'birthday' | 'deceased' | 'spouseName' | 'job' | 'cellphone' | 'phoneNo' | 'branch';
+type Field =
+  | 'name'
+  | 'gender'
+  | 'generation'
+  | 'parentName'
+  | 'birthday'
+  | 'deceased'
+  | 'spouseName'
+  | 'job'
+  | 'cellphone'
+  | 'phoneNo'
+  | 'branch';
 
 const TEMPLATE_COLUMNS: Array<Column & { field: Field }> = [
   { field: 'name', header: '姓名*', width: 12 },
@@ -53,7 +63,10 @@ const INSTRUCTIONS: string[][] = [
   ['傅開基 / 男 / 1 / （空白）', '始祖：沒有父母，必須填世代'],
   ['傅文宗 / 男 / （空白）/ 傅開基', '傅開基的兒子：世代自動算成 2'],
   ['', ''],
-  ['注意', '系統裡已有「同名且同世代」的人會被略過，不會重複新增。檔案有任何錯誤時不會匯入，請依預覽中的提示修正後重新選擇檔案。'],
+  [
+    '注意',
+    '系統裡已有「同名且同世代」的人會被略過，不會重複新增。檔案有任何錯誤時不會匯入，請依預覽中的提示修正後重新選擇檔案。',
+  ],
 ];
 
 export function buildMemberTemplateWorkbook(): XLSX.WorkBook {
@@ -119,7 +132,9 @@ function parseBirthday(value: unknown, errors: string[]): string | null {
     const date = XLSX.SSF.parse_date_code(value);
     if (date) return `${date.y}-${pad(date.m)}-${pad(date.d)}`;
   }
-  const match = String(value).trim().match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  const match = String(value)
+    .trim()
+    .match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
   if (match) {
     const [, y, m, d] = match.map(Number);
     const date = new Date(y, m - 1, d);
@@ -154,7 +169,9 @@ function normalizeHeader(value: unknown): string {
 
 function readRows(book: XLSX.WorkBook): { rows: ParsedRow[]; headerError: string | null } {
   const sheet = book.Sheets[book.SheetNames[0]];
-  const grid = sheet ? XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true, defval: null, blankrows: true }) : [];
+  const grid = sheet
+    ? XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true, defval: null, blankrows: true })
+    : [];
   const header = (grid[0] ?? []).map(normalizeHeader);
 
   const columnOf = {} as Record<Field, number>;
@@ -205,13 +222,12 @@ interface Resolution {
   parent: Candidate | null;
 }
 
-// Works out every row's parent and generation. Parents may be other rows of the same file (in any
-// order) or existing members, so this runs in passes until nothing new can be resolved; whatever is
-// left unresolved gets an explanation.
+// 推算每一列的父母與世代。父母可能是同一個檔案的其他列（順序不拘），也可能是系統裡已有的人，
+// 所以會反覆推算到沒有新的結果為止；最後仍推算不出來的列會附上原因。
 function resolveRows(rows: ParsedRow[]): Map<ParsedRow, Resolution> {
-  const existing = queryAll<{ id: number; name: string; generation: number }>('SELECT id, name, generation FROM members');
+  const existing = listAllMemberSummaries();
   const resolved = new Map<ParsedRow, Resolution>();
-  const generationOf = (c: Candidate) => (c.kind === 'db' ? c.generation : resolved.get(c.row)?.generation ?? null);
+  const generationOf = (c: Candidate) => (c.kind === 'db' ? c.generation : (resolved.get(c.row)?.generation ?? null));
 
   const candidatesFor = (row: ParsedRow): Candidate[] => {
     const fromFile: Candidate[] = rows
@@ -220,7 +236,7 @@ function resolveRows(rows: ParsedRow[]): Map<ParsedRow, Resolution> {
     const fromDb = existing
       .filter((m) => m.name === row.parentName)
       .map((m) => ({ kind: 'db' as const, id: m.id, generation: m.generation }));
-    // A file row that duplicates an existing member is the same person — don't count them twice.
+    // 檔案裡與既有成員重複的列是同一個人，不要算兩次。
     const fileGenerations = new Set(fromFile.map(generationOf).filter((g) => g !== null));
     return [...fromFile, ...fromDb.filter((c) => !fileGenerations.has(c.generation))];
   };
@@ -296,10 +312,9 @@ export function planMemberImport(book: XLSX.WorkBook): MemberImportPlan {
   }
 
   const resolved = resolveRows(rows);
-  const existing = queryAll<{ id: number; name: string; generation: number }>('SELECT id, name, generation FROM members');
+  const existing = listAllMemberSummaries();
 
-  // Rows that duplicate an existing member (same name + generation) are skipped; children pointing
-  // at them get linked to that existing member instead.
+  // 與既有成員重複（同名同世代）的列會略過；指向它的子女改接到那位既有成員。
   const duplicateOf = new Map<ParsedRow, number>();
   const seenInFile = new Map<string, ParsedRow>();
   rows.forEach((row) => {
@@ -316,7 +331,7 @@ export function planMemberImport(book: XLSX.WorkBook): MemberImportPlan {
     }
   });
 
-  // A row whose parent row has errors can't be imported either.
+  // 父母那一列有錯誤時，這一列也無法匯入。
   let changed = true;
   while (changed) {
     changed = false;
@@ -343,7 +358,7 @@ export function planMemberImport(book: XLSX.WorkBook): MemberImportPlan {
     messages: row.errors.length > 0 ? row.errors : duplicateOf.has(row) ? ['系統已有同名同世代的成員，略過'] : [],
   }));
 
-  // Insert order: a row only after its parent row — sort new rows by generation.
+  // 寫入順序：父母先於子女，所以依世代排序。
   const newRows = rows
     .filter((row) => statusOf(row) === 'new')
     .sort((a, b) => resolved.get(a)!.generation - resolved.get(b)!.generation);
@@ -353,13 +368,17 @@ export function planMemberImport(book: XLSX.WorkBook): MemberImportPlan {
     let parentRef: ImportPlanItem['parent'] = null;
     if (parent?.kind === 'db') parentRef = { existingId: parent.id };
     if (parent?.kind === 'file') {
-      parentRef = duplicateOf.has(parent.row) ? { existingId: duplicateOf.get(parent.row)! } : { key: parent.row.rowNumber };
+      parentRef = duplicateOf.has(parent.row)
+        ? { existingId: duplicateOf.get(parent.row)! }
+        : { key: parent.row.rowNumber };
     }
     return { key: row.rowNumber, fields: { ...fields, generation }, parent: parentRef, branchName: row.branch };
   });
 
   const knownBranches = new Set(getBranches().map((b) => b.name));
-  const newBranches = [...new Set(newRows.map((row) => row.branch).filter((b): b is string => b !== null && !knownBranches.has(b)))];
+  const newBranches = [
+    ...new Set(newRows.map((row) => row.branch).filter((b): b is string => b !== null && !knownBranches.has(b))),
+  ];
 
   return {
     preview: {

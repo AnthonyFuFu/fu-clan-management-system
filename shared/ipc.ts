@@ -28,6 +28,8 @@ export interface ElectronAPI {
   // 回傳新成員的 id
   createMember(input: MemberInput): Promise<number>;
   updateMember(id: number, input: MemberInput): Promise<void>;
+  // 有子女或已有繳費紀錄時會拒絕（拋出錯誤說明原因）
+  deleteMember(id: number): Promise<void>;
   getBranches(): Promise<Branch[]>;
   getFamilyTree(memberId: number): Promise<FamilyTreeResult | null>;
 
@@ -70,6 +72,14 @@ export interface ElectronAPI {
   // 回傳活動 id
   saveEvent(input: ClanEventInput): Promise<number>;
   deleteEvent(id: number): Promise<void>;
+
+  // 備份與還原：備份為一個資料夾（clan.db + documents/）
+  // 回傳建立的備份資料夾；使用者取消時為 null
+  exportBackup(): Promise<string | null>;
+  // 以備份取代目前所有資料（還原前會自動保留一份目前的資料）；使用者取消時為 false。成功後畫面需要重新載入
+  restoreBackup(): Promise<boolean>;
+  // 開啟自動備份所在的資料夾
+  openBackupFolder(): Promise<void>;
 
   // 系統設定：更新後回傳完整的最新設定；文字大小會立即套用到視窗
   getSettings(): Promise<AppSettings>;

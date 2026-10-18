@@ -1,11 +1,15 @@
-/* Cards in the same row stretch to equal height */
+/* 同一列的卡片拉成一樣高 */
 .dashboard-card {
+  height: 100%;
+}
+
+.dashboard-stat-link {
+  display: block;
   height: 100%;
 }
 
 .dashboard-stat-card {
   height: 100%;
-  cursor: pointer;
 }
 
 .dashboard-section-title {

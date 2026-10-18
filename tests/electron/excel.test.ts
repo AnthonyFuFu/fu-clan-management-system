@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import * as database from '../../electron/db';
+import { DEMO, tempDir } from '../helpers/database';
 import { importMembers } from '../../electron/db/members';
 import { buildDuesStatusWorkbook, buildTransactionsWorkbook } from '../../electron/services/excel/exports';
 import { buildMemberTemplateWorkbook, planMemberImport } from '../../electron/services/excel/memberImport';
@@ -28,7 +29,7 @@ function sheetRows(b: XLSX.WorkBook, index: number): unknown[][] {
 }
 
 beforeEach(async () => {
-  await database.initDatabase(fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-')));
+  await database.initDatabase(tempDir(), DEMO);
 });
 
 describe('member import', () => {
@@ -103,8 +104,17 @@ describe('member import', () => {
 
   test('asks for a generation when the parent name is ambiguous', () => {
     database.createMember({
-      name: '傅開基', gender: 'M', birthday: null, parentId: null, generation: 30,
-      spouseName: null, job: null, phoneNo: null, cellphone: null, branchId: null, deceased: false,
+      name: '傅開基',
+      gender: 'M',
+      birthday: null,
+      parentId: null,
+      generation: 30,
+      spouseName: null,
+      job: null,
+      phoneNo: null,
+      cellphone: null,
+      branchId: null,
+      deceased: false,
     });
     const ambiguous = planMemberImport(book([['傅子', '男', null, '傅開基']]));
     expect(ambiguous.preview.rows[0].messages[0]).toMatch('有 2 位名叫「傅開基」的人，請填寫世代以區分');
@@ -133,7 +143,18 @@ describe('exports', () => {
   test('dues status lists every living member with their payment status', () => {
     const b = roundTrip(buildDuesStatusWorkbook(YEAR));
     const [header, ...rows] = sheetRows(b, 0);
-    expect(header).toEqual(['世代', '姓名', '性別', '分支', '手機', '電話', '應繳金額', '繳費狀態', '繳費日期', '備註']);
+    expect(header).toEqual([
+      '世代',
+      '姓名',
+      '性別',
+      '分支',
+      '手機',
+      '電話',
+      '應繳金額',
+      '繳費狀態',
+      '繳費日期',
+      '備註',
+    ]);
     // 範例資料：第 16–19 世共 18 人在世，第 1–15 世已故不列出
     expect(rows).toHaveLength(18);
     expect(rows.every((r) => Number(r[0]) >= 16)).toBe(true);
@@ -163,7 +184,11 @@ describe('exports', () => {
     expect(dates).toEqual([...dates].sort());
 
     const summary = database.getFinanceSummary(YEAR);
-    const totals = Object.fromEntries(sheetRows(b, 1).slice(1).map((r) => [r[1], r[2]]));
+    const totals = Object.fromEntries(
+      sheetRows(b, 1)
+        .slice(1)
+        .map((r) => [r[1], r[2]])
+    );
     expect(totals['宗親會費']).toBe(summary.duesCollected);
     expect(totals['支出合計']).toBe(summary.expense);
     expect(totals[`累計結餘（至 ${YEAR} 年底）`]).toBe(summary.closingBalance);
@@ -181,7 +206,7 @@ describe('deceased flag', () => {
 
   test('existing databases get the column, with people born 100+ years ago marked deceased', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fu-clan-test-'));
-    await database.initDatabase(dir);
+    await database.initDatabase(dir, DEMO);
     const initSqlJs = (await import('sql.js')).default;
     const SQL = await initSqlJs();
     const file = path.join(dir, 'clan.db');
@@ -194,7 +219,7 @@ describe('deceased flag', () => {
     `);
     fs.writeFileSync(file, Buffer.from(legacy.export()));
 
-    await database.initDatabase(dir);
+    await database.initDatabase(dir, DEMO);
     const all = database.listMembers({ page: 1, pageSize: 200 }).rows;
     // 範例資料的生年：第 15 世生於 1905 年，第 16 世生於 1930 年
     expect(all.filter((m) => m.deceased).every((m) => m.generation <= 15)).toBe(true);

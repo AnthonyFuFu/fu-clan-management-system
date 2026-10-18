@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Modal, Segmented, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { GENDER_LABEL } from '@shared/labels';

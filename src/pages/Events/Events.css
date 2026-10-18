@@ -18,6 +18,12 @@
   cursor: pointer;
 }
 
+.calendar-event-button {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .calendar-event:hover {
   background: #bae0ff;
 }
@@ -40,12 +46,11 @@
   border-bottom: none;
 }
 
-.upcoming-panel-event {
+.upcoming-panel-event.plain-button {
   display: flex;
   gap: 12px;
   padding: 8px 4px;
   border-radius: 6px;
-  cursor: pointer;
 }
 
 .upcoming-panel-event:hover {

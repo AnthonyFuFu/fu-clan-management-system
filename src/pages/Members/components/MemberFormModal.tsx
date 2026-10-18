@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Col, DatePicker, Form, Input, InputNumber, Modal, Radio, Row, Select, Switch, Typography } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import type { Branch, Gender, Member, MemberInput, MemberSummary } from '@shared/types';
 import MemberSelect from '@/components/MemberSelect';
-import { remountOnOpen } from '@/utils/remountOnOpen';
+import { remountOnOpen } from '@/hoc/remountOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 import { GENDER_LABEL } from '../constants';
 
@@ -58,7 +58,7 @@ function initialValues(state: NonNullable<MemberFormState>): Partial<MemberFormV
   };
 }
 
-// The parent shown in the select before the user searches for anything.
+// 使用者還沒搜尋前，父母下拉選單要顯示的人
 function initialParent(state: NonNullable<MemberFormState>): MemberSummary | null {
   if (state.mode === 'create') {
     return state.parent ?? null;
@@ -84,7 +84,13 @@ const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModal
 
   return (
     <Modal
-      title={editing ? `修改成員：${editing.name}` : state?.mode === 'create' && state.parent ? `新增 ${state.parent.name} 的子女` : '新增成員'}
+      title={
+        editing
+          ? `修改成員：${editing.name}`
+          : state?.mode === 'create' && state.parent
+            ? `新增 ${state.parent.name} 的子女`
+            : '新增成員'
+      }
       open={state !== null}
       onCancel={onClose}
       onOk={() => form.submit()}
@@ -160,7 +166,14 @@ const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModal
                 rules={[{ required: true, message: '請輸入世代' }]}
                 extra={hasParent && parentGeneration !== null ? '依父母自動計算' : undefined}
               >
-                <InputNumber min={1} precision={0} prefix="第" suffix="世" disabled={hasParent} style={{ width: '100%' }} />
+                <InputNumber
+                  min={1}
+                  precision={0}
+                  prefix="第"
+                  suffix="世"
+                  disabled={hasParent}
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -173,7 +186,11 @@ const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModal
             </Col>
             <Col span={12}>
               <Form.Item name="branchId" label="分支">
-                <Select allowClear placeholder="未分配" options={branches.map((b) => ({ value: b.id, label: b.name }))} />
+                <Select
+                  allowClear
+                  placeholder="未分配"
+                  options={branches.map((b) => ({ value: b.id, label: b.name }))}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -204,9 +221,7 @@ const MemberFormModal = ({ state, branches, onClose, onSubmit }: MemberFormModal
             </Col>
           </Row>
 
-          {editing && (
-            <Text type="secondary">成員編號：{editing.id}</Text>
-          )}
+          {editing && <Text type="secondary">成員編號：{editing.id}</Text>}
         </Form>
       )}
     </Modal>

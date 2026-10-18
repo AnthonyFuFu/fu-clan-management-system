@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, Card, Empty, Popconfirm, Typography } from 'antd';
 import { ClockCircleOutlined, EnvironmentOutlined, PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';

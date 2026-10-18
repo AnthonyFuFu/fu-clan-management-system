@@ -1,15 +1,9 @@
-import React from 'react';
 import { Tabs } from 'antd';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
 import ExcelTab from './components/ExcelTab';
 import FilesTab from './components/FilesTab';
 import './Documents.css';
 
 const Documents = () => {
-  if (!window.electronAPI) {
-    return <DesktopOnlyNotice title="文件檔案" />;
-  }
-
   return (
     <div>
       <div className="page-header">

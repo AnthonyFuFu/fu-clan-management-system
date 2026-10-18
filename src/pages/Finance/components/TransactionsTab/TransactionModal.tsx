@@ -1,13 +1,12 @@
-import React from 'react';
 import { DatePicker, Form, Input, InputNumber, Modal, Radio, Select } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@shared/finance';
 import type { FinanceTransaction, FinanceTransactionInput, TransactionType } from '@shared/types';
-import { remountOnOpen } from '@/utils/remountOnOpen';
+import { remountOnOpen } from '@/hoc/remountOnOpen';
 import { DATE_FORMAT } from '@/utils/format';
 import { TRANSACTION_TYPE_LABEL } from '../../constants';
 
-// What the form is opened with: a type for a new entry, or an existing record to edit.
+// 開啟表單的情境：新增時帶入收入或支出，修改時帶入既有紀錄
 export type EditorState = { type: TransactionType } | { record: FinanceTransaction } | null;
 
 interface TransactionFormValues {
@@ -34,7 +33,7 @@ const TransactionModal = ({
   const type = Form.useWatch('type', form);
   const record = state && 'record' in state ? state.record : null;
 
-  // New entries default to today when browsing the current year, otherwise to Jan 1 of the selected year.
+  // 新增時的預設日期：看的是今年就用今天，否則用該年度的 1 月 1 日
   const defaultDate = dayjs().year() === year ? dayjs() : dayjs(`${year}-01-01`);
   const initialValues: Partial<TransactionFormValues> = record
     ? { ...record, txDate: dayjs(record.txDate), note: record.note ?? '' }
@@ -44,7 +43,9 @@ const TransactionModal = ({
 
   return (
     <Modal
-      title={record ? '編輯收支' : `新增${TRANSACTION_TYPE_LABEL[(initialValues.type as TransactionType) ?? 'expense']}`}
+      title={
+        record ? '編輯收支' : `新增${TRANSACTION_TYPE_LABEL[(initialValues.type as TransactionType) ?? 'expense']}`
+      }
       open={state !== null}
       onCancel={onClose}
       onOk={() => form.submit()}
@@ -55,7 +56,7 @@ const TransactionModal = ({
         layout="vertical"
         initialValues={initialValues}
         onValuesChange={(changed) => {
-          // Categories differ per type — clear the selection when switching.
+          // 收入與支出的類別不同，切換時清掉已選的類別
           if ('type' in changed) form.setFieldValue('category', undefined);
         }}
         onFinish={(v) =>

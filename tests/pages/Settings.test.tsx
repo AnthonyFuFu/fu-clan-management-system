@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SettingsProvider } from '@/components/SettingsProvider';
+import { SettingsProvider } from '@/providers/SettingsProvider';
 import type { AppSettings } from '@shared/types';
 import Settings from '@/pages/Settings';
 import { mockElectronAPI, renderWithAntd } from '../helpers/electronAPI';
@@ -14,11 +14,6 @@ function renderSettings(settings: AppSettings = { fontSize: 'standard', reminder
   );
   return api;
 }
-
-test('shows a hint when not running inside Electron', () => {
-  renderWithAntd(<Settings />);
-  expect(screen.getByText(/請以 npm run electron:dev 開啟/)).toBeInTheDocument();
-});
 
 test('shows the saved text size and applies a new one immediately', async () => {
   const api = renderSettings({ fontSize: 'large', reminderDays: 3 });
@@ -52,4 +47,25 @@ test('saves the reminder days and explains when reminders start', async () => {
 test('0 days means only on the day of the event', async () => {
   renderSettings({ fontSize: 'standard', reminderDays: 0 });
   expect(await screen.findByText(/只在活動當天提醒/)).toBeInTheDocument();
+});
+
+test('backs up to a chosen folder', async () => {
+  const api = renderSettings();
+  api.exportBackup.mockResolvedValue('/Volumes/USB/傅氏宗親會備份-20261018-143005');
+
+  await userEvent.click(screen.getByRole('button', { name: /立即備份/ }));
+  expect(await screen.findByText('已備份到：/Volumes/USB/傅氏宗親會備份-20261018-143005')).toBeInTheDocument();
+});
+
+test('asks for confirmation before restoring, and shows why a restore failed', async () => {
+  const api = renderSettings();
+  api.restoreBackup.mockRejectedValue(
+    new Error("Error invoking remote method 'restoreBackup': Error: 備份檔已損毀，或不是本系統的資料庫")
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: /從備份還原/ }));
+  expect(api.restoreBackup).not.toHaveBeenCalled();
+  await userEvent.click(await screen.findByRole('button', { name: '選擇備份資料夾' }));
+  expect(api.restoreBackup).toHaveBeenCalled();
+  expect(await screen.findByText('還原失敗：備份檔已損毀，或不是本系統的資料庫')).toBeInTheDocument();
 });

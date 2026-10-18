@@ -66,8 +66,17 @@ function buildIco(image) {
 // ICNS：'icns' + 總長度，接著每筆「類型 + 長度 + PNG 資料」
 function buildIcns(image) {
   const types = [
-    ['icp4', 16], ['icp5', 32], ['icp6', 64], ['ic07', 128],
-    ['ic08', 256], ['ic09', 512], ['ic10', 1024], ['ic11', 32], ['ic12', 64], ['ic13', 256], ['ic14', 512],
+    ['icp4', 16],
+    ['icp5', 32],
+    ['icp6', 64],
+    ['ic07', 128],
+    ['ic08', 256],
+    ['ic09', 512],
+    ['ic10', 1024],
+    ['ic11', 32],
+    ['ic12', 64],
+    ['ic13', 256],
+    ['ic14', 512],
   ];
   const chunks = types.map(([type, size]) => {
     const data = png(image, size);

@@ -1,0 +1,7 @@
+build/
+dist/
+dist-electron/
+node_modules/
+package-lock.json
+src/assets/
+*.md

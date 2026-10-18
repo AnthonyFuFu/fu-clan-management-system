@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Popconfirm, Segmented, Table, Tag, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import type { FinanceTransaction, FinanceTransactionInput, TransactionType } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 import { formatMoney } from '@/utils/format';
 import { TRANSACTION_TYPE_LABEL } from '../../constants';
-import TransactionModal, { EditorState } from './TransactionModal';
+import TransactionModal, { type EditorState } from './TransactionModal';
 
 const { Text } = Typography;
 
@@ -18,21 +20,15 @@ interface TransactionsTabProps {
 
 type TypeFilter = 'all' | TransactionType;
 
+// 固定的空陣列：載入前用它，useMemo 不會因為每次都是新陣列而重算
+const EMPTY_ROWS: FinanceTransaction[] = [];
+
 const TransactionsTab = ({ year, version, onChanged }: TransactionsTabProps) => {
   const runAction = useAsyncAction();
-  const api = window.electronAPI!;
-  const [rows, setRows] = useState<FinanceTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const api = useElectronAPI();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [editor, setEditor] = useState<EditorState>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    api
-      .getTransactions(year)
-      .then(setRows)
-      .finally(() => setLoading(false));
-  }, [api, year, version]);
+  const { data: rows = EMPTY_ROWS, loading } = useApiQuery((a) => a.getTransactions(year), [year, version]);
 
   const filtered = useMemo(
     () => (typeFilter === 'all' ? rows : rows.filter((row) => row.type === typeFilter)),

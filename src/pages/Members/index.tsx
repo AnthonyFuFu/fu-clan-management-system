@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Input, Select, Table, Tag } from 'antd';
+import { useCallback, useState } from 'react';
+import { Button, Dropdown, Input, Popconfirm, Select, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
-import type { Branch, Gender, Member, MemberInput, MemberListResult } from '@shared/types';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
+import { DownOutlined, FileExcelOutlined, PlusOutlined, UserAddOutlined } from '@ant-design/icons';
+import type { Gender, Member, MemberInput, MemberListResult } from '@shared/types';
+import { useMemberImport } from '@/components/MemberImport';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import MemberFormModal, { MemberFormState } from './components/MemberFormModal';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
+import MemberFormModal, { type MemberFormState } from './components/MemberFormModal';
 import { GENDER_LABEL, PAGE_SIZE } from './constants';
 
 interface Filters {
@@ -18,39 +20,25 @@ interface Filters {
 const EMPTY_RESULT: MemberListResult = { rows: [], total: 0, generations: [] };
 
 const Members = () => {
-  const api = window.electronAPI;
+  const api = useElectronAPI();
   const runAction = useAsyncAction();
   const [filters, setFilters] = useState<Filters>({ keyword: '' });
   const [page, setPage] = useState(1);
-  const [result, setResult] = useState<MemberListResult>(EMPTY_RESULT);
-  const [loading, setLoading] = useState(true);
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [formState, setFormState] = useState<MemberFormState>(null);
-  // Bumped after a save so the list reloads with the same filters and page.
-  const [version, setVersion] = useState(0);
 
-  useEffect(() => {
-    api?.getBranches().then(setBranches);
-  }, [api]);
+  const { data: branches = [] } = useApiQuery((a) => a.getBranches(), []);
+  const {
+    data: result = EMPTY_RESULT,
+    loading,
+    reload,
+  } = useApiQuery((a) => a.listMembers({ ...filters, page, pageSize: PAGE_SIZE }), [filters, page]);
+  const memberImport = useMemberImport(reload);
 
-  useEffect(() => {
-    if (!api) return;
-    setLoading(true);
-    api
-      .listMembers({ ...filters, page, pageSize: PAGE_SIZE })
-      .then(setResult)
-      .finally(() => setLoading(false));
-  }, [api, filters, page, version]);
-
-  // Changing a filter always goes back to the first page.
+  // 改了篩選條件一律回到第一頁
   const updateFilters = useCallback((patch: Partial<Filters>) => {
     setFilters((current) => ({ ...current, ...patch }));
     setPage(1);
   }, []);
-
-  if (!api) {
-    return <DesktopOnlyNotice title="宗親成員管理" />;
-  }
 
   const handleSubmit = async (input: MemberInput) => {
     const editing = formState?.mode === 'edit' ? formState.member : null;
@@ -59,7 +47,14 @@ const Members = () => {
       : await runAction(() => api.createMember(input), `已新增 ${input.name}`, '新增失敗');
     if (ok) {
       setFormState(null);
-      setVersion((v) => v + 1);
+      // 以同樣的篩選條件與頁碼重新載入
+      reload();
+    }
+  };
+
+  const handleDelete = async (member: Member) => {
+    if (await runAction(() => api.deleteMember(member.id), `已刪除 ${member.name}`, '刪除失敗')) {
+      reload();
     }
   };
 
@@ -92,7 +87,7 @@ const Members = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 190,
+      width: 240,
       fixed: 'right',
       render: (_, row) => (
         <>
@@ -109,6 +104,17 @@ const Members = () => {
           >
             新增子女
           </Button>
+          <Popconfirm
+            title={`確定刪除 ${row.name}？`}
+            description="刪除後無法復原。已過世的宗親請改用「修改」標記為已故。"
+            okText="刪除"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => handleDelete(row)}
+          >
+            <Button type="link" size="small" danger>
+              刪除
+            </Button>
+          </Popconfirm>
         </>
       ),
     },
@@ -155,6 +161,18 @@ const Members = () => {
           style={{ width: 130 }}
         />
         <div className="page-toolbar-spacer" />
+        <Dropdown
+          menu={{
+            items: [
+              { key: 'template', label: '下載匯入範本', onClick: memberImport.downloadTemplate },
+              { key: 'import', label: '選擇 Excel 檔案匯入', onClick: memberImport.pickImportFile },
+            ],
+          }}
+        >
+          <Button icon={<FileExcelOutlined />}>
+            Excel 匯入 <DownOutlined />
+          </Button>
+        </Dropdown>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormState({ mode: 'create' })}>
           新增成員
         </Button>
@@ -184,6 +202,7 @@ const Members = () => {
         onClose={() => setFormState(null)}
         onSubmit={handleSubmit}
       />
+      {memberImport.modal}
     </div>
   );
 };

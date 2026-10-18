@@ -1,4 +1,4 @@
-/* Cards in the same row stretch to equal height */
+/* 同一列的卡片拉成一樣高 */
 .documents-card {
   height: 100%;
 }

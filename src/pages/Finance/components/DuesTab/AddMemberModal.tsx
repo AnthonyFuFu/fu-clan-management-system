@@ -1,8 +1,7 @@
-import React from 'react';
 import { Form, InputNumber, Modal } from 'antd';
 import { DEFAULT_DUES_AMOUNT } from '@shared/finance';
 import MemberSelect from '@/components/MemberSelect';
-import { remountOnOpen } from '@/utils/remountOnOpen';
+import { remountOnOpen } from '@/hoc/remountOnOpen';
 
 const AddMemberModal = ({
   year,
@@ -19,7 +18,13 @@ const AddMemberModal = ({
 }) => {
   const [form] = Form.useForm<{ memberId: number; amount: number }>();
   return (
-    <Modal title={`加入 ${year} 年度應繳名單`} open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnHidden>
+    <Modal
+      title={`加入 ${year} 年度應繳名單`}
+      open={open}
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
       <Form
         form={form}
         layout="vertical"

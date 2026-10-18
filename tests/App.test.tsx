@@ -9,3 +9,10 @@ test('renders main navigation', async () => {
   expect(await screen.findByRole('link', { name: '首頁儀表板' })).toBeInTheDocument();
   expect(await screen.findByRole('link', { name: '宗親世系圖' })).toBeInTheDocument();
 });
+
+test('shows the desktop-only hint instead of the page in a plain browser', async () => {
+  // 沒有 mockElectronAPI：等同 npm start 的純瀏覽器模式
+  renderWithAntd(<App />);
+  expect(await screen.findByText(/請以 npm run electron:dev 開啟/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '傅氏宗親會管理系統' })).toBeInTheDocument();
+});

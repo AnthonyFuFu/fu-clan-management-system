@@ -2,6 +2,7 @@ import { app, shell } from 'electron';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { inTransaction } from '../db/connection';
 import { deleteDocumentRow, getStoredDocument, insertDocument } from '../db/documents';
 import { askOpenPaths, askSavePath } from './dialogs';
 
@@ -9,7 +10,7 @@ import { askOpenPaths, askSavePath } from './dialogs';
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 // 與 clan.db 放在同一個使用者資料夾，備份時一起複製即可
-function documentsDir(): string {
+export function documentsDir(): string {
   const dir = path.join(app.getPath('userData'), 'documents');
   fs.mkdirSync(dir, { recursive: true });
   return dir;
@@ -19,20 +20,30 @@ function storedPath(storedName: string): string {
   return path.join(documentsDir(), storedName);
 }
 
-// Copies the chosen files into the app's documents folder under collision-free names.
-// Returns how many were uploaded (0 when the user cancels).
+// 把選擇的檔案複製到程式的文件資料夾，檔名不會互相衝突。
+// 全部成功才算數：任何一個檔案複製失敗，已複製的檔案都會刪除，資料庫也不會寫入。
+// 回傳上傳的檔案數（使用者取消時為 0）。
 export async function uploadDocuments(): Promise<number> {
   const sources = await askOpenPaths({ multiple: true });
-  const tooLarge = sources.filter((source) => fs.statSync(source).size > MAX_FILE_SIZE);
+  const files = sources.map((source) => ({ source, size: fs.statSync(source).size }));
+  const tooLarge = files.filter((file) => file.size > MAX_FILE_SIZE);
   if (tooLarge.length > 0) {
-    throw new Error(`檔案超過 200 MB，無法上傳：${tooLarge.map((s) => path.basename(s)).join('、')}`);
+    throw new Error(`檔案超過 200 MB，無法上傳：${tooLarge.map((f) => path.basename(f.source)).join('、')}`);
   }
-  sources.forEach((source) => {
-    const storedName = `${randomUUID()}${path.extname(source).toLowerCase()}`;
-    fs.copyFileSync(source, storedPath(storedName));
-    insertDocument(path.basename(source), storedName, fs.statSync(source).size);
-  });
-  return sources.length;
+
+  const copied: { fileName: string; storedName: string; size: number }[] = [];
+  try {
+    files.forEach(({ source, size }) => {
+      const storedName = `${randomUUID()}${path.extname(source).toLowerCase()}`;
+      fs.copyFileSync(source, storedPath(storedName));
+      copied.push({ fileName: path.basename(source), storedName, size });
+    });
+    inTransaction(() => copied.forEach((file) => insertDocument(file.fileName, file.storedName, file.size)));
+  } catch (error) {
+    copied.forEach((file) => fs.rmSync(storedPath(file.storedName), { force: true }));
+    throw error;
+  }
+  return copied.length;
 }
 
 export async function downloadDocument(id: number): Promise<string | null> {

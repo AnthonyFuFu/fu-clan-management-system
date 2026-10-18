@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Empty, Input, Popconfirm, Segmented, Table, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { PlusOutlined, CheckOutlined } from '@ant-design/icons';
 import type { DuesRecord } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 import { formatMoney } from '@/utils/format';
 import AddMemberModal from './AddMemberModal';
 import CreateYearModal from './CreateYearModal';
@@ -21,11 +23,12 @@ interface DuesTabProps {
 
 type StatusFilter = 'all' | 'unpaid' | 'paid';
 
+// 固定的空陣列：載入前用它，useMemo 不會因為每次都是新陣列而重算
+const EMPTY_ROWS: DuesRecord[] = [];
+
 const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
   const runAction = useAsyncAction();
-  const api = window.electronAPI!;
-  const [rows, setRows] = useState<DuesRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const api = useElectronAPI();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [keyword, setKeyword] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -35,14 +38,12 @@ const DuesTab = ({ year, version, onChanged }: DuesTabProps) => {
   const [editing, setEditing] = useState<DuesRecord | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
+  const { data: rows = EMPTY_ROWS, loading } = useApiQuery((a) => a.getDues(year), [year, version]);
+
+  // 換年度或資料重新載入時，清掉已勾選的列
   useEffect(() => {
-    setLoading(true);
     setSelectedIds([]);
-    api
-      .getDues(year)
-      .then(setRows)
-      .finally(() => setLoading(false));
-  }, [api, year, version]);
+  }, [year, version]);
 
   // 每次寫入：顯示結果，成功後通知所有財務畫面重新載入
   const run = async <T,>(action: () => Promise<T>, success: string | ((result: T) => string), errorPrefix?: string) => {

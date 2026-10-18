@@ -13,6 +13,7 @@ const electronAPI: ElectronAPI = {
   listMembers: (query) => invoke('listMembers', query),
   createMember: (input) => invoke('createMember', input),
   updateMember: (id, input) => invoke('updateMember', id, input),
+  deleteMember: (id) => invoke('deleteMember', id),
   getBranches: () => invoke('getBranches'),
   getFamilyTree: (memberId) => invoke('getFamilyTree', memberId),
 
@@ -43,6 +44,10 @@ const electronAPI: ElectronAPI = {
   listEvents: (from, to) => invoke('listEvents', from, to),
   saveEvent: (input) => invoke('saveEvent', input),
   deleteEvent: (id) => invoke('deleteEvent', id),
+
+  exportBackup: () => invoke('exportBackup'),
+  restoreBackup: () => invoke('restoreBackup'),
+  openBackupFolder: () => invoke('openBackupFolder'),
 
   getSettings: () => invoke('getSettings'),
   updateSettings: (patch) => invoke('updateSettings', patch),

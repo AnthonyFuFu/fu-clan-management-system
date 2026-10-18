@@ -1,4 +1,3 @@
-import React from 'react';
 import { Empty, Typography } from 'antd';
 import type { CategoryTotal } from '@shared/types';
 import { formatMoney } from '@/utils/format';

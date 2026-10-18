@@ -1,6 +1,6 @@
-import React from 'react';
+import { GENDER_LABEL } from '@shared/labels';
 import type { FamilyTreeNode } from '@shared/types';
-import { NODE_HEIGHT, NODE_WIDTH, Point } from '../layout';
+import { NODE_HEIGHT, NODE_WIDTH, type Point } from '../layout';
 import { nodeBackground, RELATION_COLOR } from '../theme';
 
 interface TreeNodeProps {
@@ -14,8 +14,10 @@ interface TreeNodeProps {
 const TreeNode = ({ node, position, isLocking, onSelect }: TreeNodeProps) => {
   const isSelf = node.relation === 'self';
   return (
-    <div
-      className={`familyTreeNode${isSelf && isLocking ? ' familyTreeNode--locking' : ''}`}
+    <button
+      type="button"
+      title={`以 ${node.name} 為中心`}
+      className={`plain-button familyTreeNode${isSelf && isLocking ? ' familyTreeNode--locking' : ''}`}
       onClick={onSelect}
       style={{
         position: 'absolute',
@@ -27,15 +29,15 @@ const TreeNode = ({ node, position, isLocking, onSelect }: TreeNodeProps) => {
         borderRadius: 8,
         background: nodeBackground(node),
         border: isSelf ? `2px solid ${RELATION_COLOR.self.border}` : '1px solid rgba(0,0,0,0.08)',
-        cursor: 'pointer',
+        textAlign: 'left',
         color: isSelf ? '#fff' : 'rgba(0,0,0,0.78)',
       }}
     >
-      <div style={{ fontWeight: 600 }}>{node.name}</div>
-      <div style={{ fontSize: 12 }}>{node.gender === 'M' ? '男' : '女'}</div>
-      {node.job && <div style={{ fontSize: 12 }}>{node.job}</div>}
-      {node.spouseName && <div style={{ fontSize: 12 }}>配偶：{node.spouseName}</div>}
-    </div>
+      <span style={{ display: 'block', fontWeight: 600 }}>{node.name}</span>
+      <span style={{ display: 'block', fontSize: 12 }}>{GENDER_LABEL[node.gender]}</span>
+      {node.job && <span style={{ display: 'block', fontSize: 12 }}>{node.job}</span>}
+      {node.spouseName && <span style={{ display: 'block', fontSize: 12 }}>配偶：{node.spouseName}</span>}
+    </button>
   );
 };
 

@@ -1,40 +1,61 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Select, Tabs } from 'antd';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
+import { useCallback, useState } from 'react';
+import { Button, Dropdown, Select, Space, Tabs } from 'antd';
+import { DownOutlined, FileExcelOutlined } from '@ant-design/icons';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
+import { savedFileMessage } from '@/utils/format';
 import FinanceOverview from './components/Overview';
 import DuesTab from './components/DuesTab';
 import TransactionsTab from './components/TransactionsTab';
 import './Finance.css';
 
 const Finance = () => {
-  const [years, setYears] = useState<number[]>([new Date().getFullYear()]);
+  const api = useElectronAPI();
+  const runAction = useAsyncAction();
   const [year, setYear] = useState(new Date().getFullYear());
-  // Bumped after every write so all tabs (and the overview totals) reload together.
+  // 每次寫入後加一，讓所有分頁（含總覽數字）一起重新載入
   const [version, setVersion] = useState(0);
   const handleChanged = useCallback(() => setVersion((v) => v + 1), []);
 
-  useEffect(() => {
-    window.electronAPI?.getFinanceYears().then((list) => {
-      // Always offer next year too, so dues can be opened before the year starts.
-      const nextYear = new Date().getFullYear() + 1;
-      setYears(Array.from(new Set([nextYear, ...list])).sort((a, b) => b - a));
-    });
-  }, [version]);
-
-  if (!window.electronAPI) {
-    return <DesktopOnlyNotice title="財務管理" />;
-  }
+  const { data: financeYears = [] } = useApiQuery((api) => api.getFinanceYears(), [version]);
+  // 一定提供明年度，讓會費可以在年初前先開立
+  const years = Array.from(new Set([new Date().getFullYear() + 1, new Date().getFullYear(), ...financeYears])).sort(
+    (a, b) => b - a
+  );
 
   return (
     <div>
       <div className="page-header">
         <h1>財務管理</h1>
-        <Select
-          value={year}
-          onChange={setYear}
-          options={years.map((y) => ({ value: y, label: `${y} 年度` }))}
-          style={{ width: 140 }}
-        />
+        <Space wrap>
+          <Select
+            value={year}
+            onChange={setYear}
+            options={years.map((y) => ({ value: y, label: `${y} 年度` }))}
+            style={{ width: 140 }}
+          />
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'dues',
+                  label: `${year} 年度會費繳納名單`,
+                  onClick: () => runAction(() => api.exportDuesStatus(year), savedFileMessage, '匯出失敗'),
+                },
+                {
+                  key: 'transactions',
+                  label: `${year} 年度收支明細`,
+                  onClick: () => runAction(() => api.exportTransactions(year), savedFileMessage, '匯出失敗'),
+                },
+              ],
+            }}
+          >
+            <Button icon={<FileExcelOutlined />}>
+              匯出 Excel <DownOutlined />
+            </Button>
+          </Dropdown>
+        </Space>
       </div>
 
       <Tabs

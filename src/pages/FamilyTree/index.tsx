@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Spin, Empty, Typography, Tag } from 'antd';
-import type { FamilyTreeResult } from '@shared/types';
-import DesktopOnlyNotice from '@/components/DesktopOnlyNotice';
+import { useApiQuery } from '@/hooks/useApiQuery';
 import TreeNode from './components/TreeNode';
 import { AXIS_WIDTH, computeLayout, NODE_HEIGHT, NODE_WIDTH } from './layout';
 import { nodeBackground, RELATION_LEGEND } from './theme';
@@ -9,41 +8,25 @@ import './FamilyTree.css';
 
 const { Title, Text } = Typography;
 
-const FamilyTree: React.FC = () => {
+const FamilyTree = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [tree, setTree] = useState<FamilyTreeResult | null>(null);
-  const [loading, setLoading] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // 初始載入：取第一代最前面的成員當作預設中心人物，不提供搜尋，改用點擊樹狀圖節點切換中心。
-  useEffect(() => {
-    const api = window.electronAPI;
-    if (!api) {
-      return;
-    }
-    api.searchMembers('').then((list) => {
-      if (list.length > 0) {
-        setSelectedId(list[0].id);
-      }
-    });
-  }, []);
+  // 預設中心人物：第一代最前面的成員。不提供搜尋，改用點擊樹狀圖節點切換中心。
+  const { data: firstMembers } = useApiQuery((api) => api.searchMembers(''), []);
+  const focusId = selectedId ?? firstMembers?.[0]?.id ?? null;
 
+  const { data: treeResult, loading } = useApiQuery((api) => api.getFamilyTree(focusId as number), [focusId], {
+    enabled: focusId !== null,
+  });
+  const tree = treeResult ?? null;
+
+  // 換了新的樹之後短暫鎖住節點，避免捲動動畫進行中又點到別人
   useEffect(() => {
-    const api = window.electronAPI;
-    if (!api || selectedId === null) {
-      return;
-    }
-    setLoading(true);
-    api
-      .getFamilyTree(selectedId)
-      .then((result) => {
-        setTree(result);
-        setIsLocking(true);
-      })
-      .finally(() => setLoading(false));
-  }, [selectedId]);
+    if (treeResult) setIsLocking(true);
+  }, [treeResult]);
 
   useEffect(() => {
     if (!isLocking) {
@@ -71,10 +54,6 @@ const FamilyTree: React.FC = () => {
       behavior: 'smooth',
     });
   }, [layout, tree]);
-
-  if (!window.electronAPI) {
-    return <DesktopOnlyNotice title="宗親世系圖" />;
-  }
 
   return (
     <div>

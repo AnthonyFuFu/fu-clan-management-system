@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
 import { Card, Col, Progress, Row, Statistic, Typography } from 'antd';
-import type { CategoryTotal, FinanceSummary } from '@shared/types';
-import { formatMoney } from '@/utils/format';
-import { EXPENSE_COLOR, INCOME_COLOR } from '../../constants';
+import type { CategoryTotal } from '@shared/types';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { formatMoney, formatSignedMoney } from '@/utils/format';
+import { EXPENSE_COLOR, INCOME_COLOR } from '@/constants/colors';
 import Breakdown from './Breakdown';
 
 const { Text } = Typography;
@@ -13,17 +13,10 @@ interface FinanceOverviewProps {
 }
 
 const FinanceOverview = ({ year, version }: FinanceOverviewProps) => {
-  const [summary, setSummary] = useState<FinanceSummary | null>(null);
-
-  useEffect(() => {
-    setSummary(null);
-    window.electronAPI?.getFinanceSummary(year).then(setSummary);
-  }, [year, version]);
-
-  const loading = summary === null;
+  const { data: summary, loading } = useApiQuery((api) => api.getFinanceSummary(year), [year, version]);
   const s = summary;
   const collectRate = s && s.duesExpected > 0 ? Math.round((s.duesCollected / s.duesExpected) * 100) : 0;
-  // Dues are shown as their own slice of income so the breakdown adds up to the year's total income.
+  // 會費也列成收入的一項，各項加起來才會等於年度總收入
   const incomeRows: CategoryTotal[] = s
     ? [{ category: '宗親會費', amount: s.duesCollected }, ...s.incomeByCategory].filter((row) => row.amount > 0)
     : [];
@@ -46,7 +39,7 @@ const FinanceOverview = ({ year, version }: FinanceOverviewProps) => {
         {statCard(
           '累計結餘',
           s?.closingBalance ?? 0,
-          `至 ${year} 年底；本年度 ${(s?.yearBalance ?? 0) >= 0 ? '+' : ''}${(s?.yearBalance ?? 0).toLocaleString('zh-TW')} 元`,
+          `至 ${year} 年底；本年度 ${formatSignedMoney(s?.yearBalance ?? 0)}`,
           (s?.closingBalance ?? 0) < 0 ? EXPENSE_COLOR : undefined
         )}
       </Row>
@@ -62,7 +55,8 @@ const FinanceOverview = ({ year, version }: FinanceOverviewProps) => {
                     已繳 <Text strong>{s.duesPaidCount}</Text> 人
                   </div>
                   <div>
-                    未繳 <Text strong type={s.duesMemberCount > s.duesPaidCount ? 'warning' : undefined}>
+                    未繳{' '}
+                    <Text strong type={s.duesMemberCount > s.duesPaidCount ? 'warning' : undefined}>
                       {s.duesMemberCount - s.duesPaidCount}
                     </Text>{' '}
                     人

@@ -1,13 +1,7 @@
 import type { SqlValue } from 'sql.js';
-import type {
-  Branch,
-  Member,
-  MemberInput,
-  MemberListResult,
-  MemberQuery,
-  MemberSummary,
-} from '../../shared/types';
+import type { Branch, Member, MemberInput, MemberListResult, MemberQuery, MemberSummary } from '../../shared/types';
 import { db, inTransaction, queryAll, queryOne, queryScalar } from './connection';
+import { DATE_PATTERN, optionalText } from './validation';
 
 // members 資料表的原始欄位（snake_case）
 export interface MemberRow {
@@ -28,8 +22,7 @@ export interface MemberRow {
 
 const MAX_PAGE_SIZE = 200;
 
-// Search-based lookup instead of returning every member — keeps the picker usable once the
-// clan register grows into the thousands of records.
+// 用搜尋而不是一次回傳全部成員：名冊成長到上千人時，下拉選單仍然好用。
 export function searchMembers(keyword: string, limit = 20): MemberSummary[] {
   return queryAll<MemberSummary>(
     'SELECT id, name, generation FROM members WHERE name LIKE ? ORDER BY generation, id LIMIT ?',
@@ -37,11 +30,16 @@ export function searchMembers(keyword: string, limit = 20): MemberSummary[] {
   );
 }
 
+// 全部成員的姓名與世代：Excel 匯入時比對父母、找出重複的人
+export function listAllMemberSummaries(): MemberSummary[] {
+  return queryAll<MemberSummary>('SELECT id, name, generation FROM members');
+}
+
 export function getBranches(): Branch[] {
   return queryAll<Branch>('SELECT id, name FROM branches ORDER BY id');
 }
 
-// Paged on the database side so the list stays fast however large the register grows.
+// 在資料庫端分頁，名冊再大，列表也一樣快。
 export function listMembers(query: MemberQuery): MemberListResult {
   const where: string[] = [];
   const params: SqlValue[] = [];
@@ -88,7 +86,7 @@ export function listMembers(query: MemberQuery): MemberListResult {
   return { rows: rows.map((row) => ({ ...row, deceased: row.deceased === 1 })), total, generations };
 }
 
-// The member itself plus every descendant — used to stop a parent change from creating a loop.
+// 成員本身加上所有子孫：修改父母時用來防止形成循環（把自己的子孫設為父母）。
 function subtreeIds(memberId: number): number[] {
   return queryAll<{ id: number }>(
     `WITH RECURSIVE subtree(id) AS (
@@ -101,17 +99,8 @@ function subtreeIds(memberId: number): number[] {
   ).map((row) => row.id);
 }
 
-function optionalText(value: string | null, maxLength: number, label: string, errors: string[]): string | null {
-  const text = value?.trim() ?? '';
-  if (text.length > maxLength) {
-    errors.push(`${label}最多 ${maxLength} 個字`);
-  }
-  return text === '' ? null : text;
-}
-
-// Field-level checks shared by the member form and the Excel import. Returns every problem found
-// (not just the first) so an import preview can list them all for a row. Parent / generation /
-// branch are resolved separately because the import looks them up differently.
+// 成員表單與 Excel 匯入共用的欄位檢查。回傳所有問題（不只第一個），匯入預覽才能把一列的錯誤全部列出。
+// 父母、世代、分支另外處理，因為匯入時查找的方式不同。
 export function validateMemberFields(
   input: Pick<MemberInput, 'name' | 'gender' | 'birthday' | 'spouseName' | 'job' | 'phoneNo' | 'cellphone' | 'deceased'>
 ): { errors: string[]; fields: Omit<MemberRow, 'id' | 'parent_id' | 'generation' | 'branch_id'> } {
@@ -123,23 +112,28 @@ export function validateMemberFields(
   if (input.gender !== 'M' && input.gender !== 'F') {
     errors.push('性別必須是「男」或「女」');
   }
-  if (input.birthday !== null && !/^\d{4}-\d{2}-\d{2}$/.test(input.birthday)) {
+  if (input.birthday !== null && !DATE_PATTERN.test(input.birthday)) {
     errors.push('生日格式不正確（例如 1980-06-15）');
   }
+  const text = (value: string | null, maxLength: number, label: string) => {
+    const result = optionalText(value, maxLength, label);
+    if (result.error) errors.push(result.error);
+    return result.text;
+  };
   const fields = {
     name,
     gender: input.gender,
     birthday: input.birthday,
-    spouse_name: optionalText(input.spouseName, 50, '配偶', errors),
-    job: optionalText(input.job, 50, '職業', errors),
-    phone_no: optionalText(input.phoneNo, 30, '電話', errors),
-    cellphone: optionalText(input.cellphone, 30, '手機', errors),
+    spouse_name: text(input.spouseName, 50, '配偶'),
+    job: text(input.job, 50, '職業'),
+    phone_no: text(input.phoneNo, 30, '電話'),
+    cellphone: text(input.cellphone, 30, '手機'),
     deceased: input.deceased ? 1 : 0,
   };
   return { errors, fields };
 }
 
-// Validates the input and resolves the generation: parent's generation + 1, or the given value for a root ancestor.
+// 檢查輸入並決定世代：有父母時為父母世代 + 1，始祖則用輸入的世代。
 function normalize(input: MemberInput): Omit<MemberRow, 'id'> {
   const { errors, fields } = validateMemberFields(input);
   if (errors.length > 0) {
@@ -167,7 +161,19 @@ function insertMemberRow(row: Omit<MemberRow, 'id'>): number {
   db().run(
     `INSERT INTO members (name, gender, birthday, parent_id, generation, spouse_name, job, phone_no, cellphone, branch_id, deceased)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [row.name, row.gender, row.birthday, row.parent_id, row.generation, row.spouse_name, row.job, row.phone_no, row.cellphone, row.branch_id, row.deceased]
+    [
+      row.name,
+      row.gender,
+      row.birthday,
+      row.parent_id,
+      row.generation,
+      row.spouse_name,
+      row.job,
+      row.phone_no,
+      row.cellphone,
+      row.branch_id,
+      row.deceased,
+    ]
   );
   return Number(queryScalar('SELECT last_insert_rowid()'));
 }
@@ -191,9 +197,22 @@ export function updateMember(id: number, input: MemberInput): void {
       `UPDATE members SET name = ?, gender = ?, birthday = ?, parent_id = ?, generation = ?,
               spouse_name = ?, job = ?, phone_no = ?, cellphone = ?, branch_id = ?, deceased = ?
         WHERE id = ?`,
-      [row.name, row.gender, row.birthday, row.parent_id, row.generation, row.spouse_name, row.job, row.phone_no, row.cellphone, row.branch_id, row.deceased, id]
+      [
+        row.name,
+        row.gender,
+        row.birthday,
+        row.parent_id,
+        row.generation,
+        row.spouse_name,
+        row.job,
+        row.phone_no,
+        row.cellphone,
+        row.branch_id,
+        row.deceased,
+        id,
+      ]
     );
-    // Moving a member to a different generation moves their whole line of descendants with them.
+    // 成員換了世代時，所有子孫跟著一起移動。
     const shift = row.generation - current.generation;
     if (shift !== 0) {
       const descendants = subtreeIds(id).filter((memberId) => memberId !== id);
@@ -207,8 +226,30 @@ export function updateMember(id: number, input: MemberInput): void {
   });
 }
 
-// One member from an Excel import, already validated. `parent` points either at an existing member
-// or at another row of the same import (by its key); rows are given parents-first.
+// 刪除成員。為了不破壞世系與帳目：
+// - 有子女的人不能刪（子女的父母會變成不存在）
+// - 已有繳費紀錄的人不能刪（會讓過去年度的收入對不上）；過世的人請改標記為已故
+// 還沒繳費的會費名單列會一併刪除。
+export function deleteMember(id: number): void {
+  const member = queryOne<{ name: string }>('SELECT name FROM members WHERE id = ?', [id]);
+  if (!member) {
+    throw new Error('成員不存在');
+  }
+  if (Number(queryScalar('SELECT COUNT(*) FROM members WHERE parent_id = ?', [id])) > 0) {
+    throw new Error(`${member.name} 還有子女資料，請先刪除子女或修改子女的父母`);
+  }
+  if (
+    Number(queryScalar('SELECT COUNT(*) FROM dues_payments WHERE member_id = ? AND paid_date IS NOT NULL', [id])) > 0
+  ) {
+    throw new Error(`${member.name} 已有繳費紀錄，刪除會影響帳目；如已過世請改標記為「已故」`);
+  }
+  inTransaction(() => {
+    db().run('DELETE FROM dues_payments WHERE member_id = ?', [id]);
+    db().run('DELETE FROM members WHERE id = ?', [id]);
+  });
+}
+
+// Excel 匯入的一位成員（已檢查過）。parent 指向既有成員，或同一批匯入的另一列（用 key）；父母一定排在子女前面。
 export interface ImportPlanItem {
   key: number;
   fields: Omit<MemberRow, 'id' | 'parent_id' | 'branch_id'>;
@@ -216,7 +257,7 @@ export interface ImportPlanItem {
   branchName: string | null;
 }
 
-// Inserts the whole import atomically — either every row goes in or none does. Returns the number inserted.
+// 整批匯入是原子操作：要嘛全部寫入、要嘛完全不寫。回傳新增的人數。
 export function importMembers(plan: ImportPlanItem[], newBranches: string[]): number {
   return inTransaction(() => {
     newBranches.forEach((name) => db().run('INSERT INTO branches (name) VALUES (?)', [name]));
@@ -233,7 +274,7 @@ export function importMembers(plan: ImportPlanItem[], newBranches: string[]): nu
           throw new Error(`Import order error: parent row ${item.parent.key} not inserted yet`);
         }
       }
-      const branchId = item.branchName ? branchIds.get(item.branchName) ?? null : null;
+      const branchId = item.branchName ? (branchIds.get(item.branchName) ?? null) : null;
       insertedIds.set(item.key, insertMemberRow({ ...item.fields, parent_id: parentId, branch_id: branchId }));
     });
     return plan.length;

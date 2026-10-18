@@ -2,7 +2,7 @@ import { DASHBOARD_UPCOMING_DAYS, daysUntil, toDateString, upcomingEvents } from
 import type { CountItem, DashboardStats, DocumentFile, FinanceTransaction, UpcomingBirthday } from '../../shared/types';
 import { queryAll, queryOne, queryScalar } from './connection';
 import { listEvents } from './events';
-import { getBalanceUntil, getFinanceSummary } from './finance';
+import { getBalanceAsOf, getFinanceSummary } from './finance';
 
 // 近期壽辰最多列出幾位、最近收支列出幾筆、近期活動列出幾筆
 const MAX_BIRTHDAYS = 8;
@@ -118,14 +118,13 @@ function eventStats(now: Date) {
   const monthPrefix = toDateString(now).slice(0, 7);
   const last = new Date(now.getFullYear(), now.getMonth(), now.getDate() + DASHBOARD_UPCOMING_DAYS);
   return {
-    monthlyEventCount: Number(
-      queryScalar('SELECT COUNT(*) FROM events WHERE event_date LIKE ?', [`${monthPrefix}%`])
-    ),
+    monthlyEventCount: Number(queryScalar('SELECT COUNT(*) FROM events WHERE event_date LIKE ?', [`${monthPrefix}%`])),
     yearEventCount: Number(queryScalar('SELECT COUNT(*) FROM events WHERE event_date LIKE ?', [`${year}-%`])),
-    upcomingEvents: upcomingEvents(listEvents(toDateString(now), toDateString(last)), now, DASHBOARD_UPCOMING_DAYS).slice(
-      0,
-      MAX_EVENTS
-    ),
+    upcomingEvents: upcomingEvents(
+      listEvents(toDateString(now), toDateString(last)),
+      now,
+      DASHBOARD_UPCOMING_DAYS
+    ).slice(0, MAX_EVENTS),
   };
 }
 
@@ -154,7 +153,7 @@ export function getDashboardStats(): DashboardStats {
     branchCount: Number(queryScalar('SELECT COUNT(*) FROM branches')),
     ...members,
     ...eventStats(now),
-    financeTotal: getBalanceUntil(null),
+    financeTotal: getBalanceAsOf(toDateString(now)),
     finance: getFinanceSummary(now.getFullYear()),
     recentTransactions: queryAll<FinanceTransaction>(
       `SELECT id, type, category, item, amount, tx_date AS txDate, note
