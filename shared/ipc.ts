@@ -1,5 +1,7 @@
 import type {
   Branch,
+  ClanEvent,
+  ClanEventInput,
   DashboardStats,
   DocumentFile,
   DuesRecord,
@@ -61,6 +63,12 @@ export interface ElectronAPI {
   previewMemberImport(): Promise<MemberImportPreview | null>;
   // 回傳新增的人數
   confirmMemberImport(token: string): Promise<number>;
+
+  // 活動與聚會：from / to 為 YYYY-MM-DD（含頭尾）
+  listEvents(from: string, to: string): Promise<ClanEvent[]>;
+  // 回傳活動 id
+  saveEvent(input: ClanEventInput): Promise<number>;
+  deleteEvent(id: number): Promise<void>;
 }
 
 export type IpcChannel = keyof ElectronAPI;

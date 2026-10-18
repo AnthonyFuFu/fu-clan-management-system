@@ -35,7 +35,12 @@ export function createSchema(): void {
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
-      event_date TEXT NOT NULL
+      event_date TEXT NOT NULL,
+      -- HH:mm；NULL 表示整天
+      start_time TEXT,
+      end_time TEXT,
+      location TEXT,
+      note TEXT
     );
     -- One row per member per year: the member is on that year's dues roster.
     CREATE TABLE IF NOT EXISTS dues_payments (
@@ -66,6 +71,16 @@ export function createSchema(): void {
       uploaded_at TEXT NOT NULL
     );
   `);
+}
+
+// Columns added to events after the first release (originally only title + date).
+export function migrateEventColumns(): void {
+  const columns = queryAll<{ name: string }>('PRAGMA table_info(events)').map((column) => column.name);
+  const missing = ['start_time', 'end_time', 'location', 'note'].filter((name) => !columns.includes(name));
+  missing.forEach((name) => db().run(`ALTER TABLE events ADD COLUMN ${name} TEXT;`));
+  if (missing.length > 0) {
+    saveDatabase();
+  }
 }
 
 // Columns added to members after the first release. Existing installs get them here; new installs

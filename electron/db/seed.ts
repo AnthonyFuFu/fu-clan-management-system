@@ -1,5 +1,6 @@
 import type { FinanceTransactionInput } from '../../shared/types';
 import { DEFAULT_DUES_AMOUNT } from '../../shared/finance';
+import { toDateString } from '../../shared/events';
 import { db } from './connection';
 import { createDuesYear, getDues, insertTransaction, setDuesPaid } from './finance';
 
@@ -95,12 +96,20 @@ export function seedData(): void {
   });
   insertMember.free();
 
-  const now = new Date();
-  const insertEvent = db().prepare('INSERT INTO events (title, event_date) VALUES (?, ?)');
-  for (let i = 1; i <= 3; i += 1) {
-    const eventDate = new Date(now.getFullYear(), now.getMonth(), i * 5);
-    insertEvent.run([`活動 ${i}`, eventDate.toISOString().slice(0, 10)]);
-  }
+  // 範例活動以「今天」為基準排列，讓行事曆與提醒一開啟就有內容
+  const today = new Date();
+  const daysFromToday = (days: number) =>
+    toDateString(new Date(today.getFullYear(), today.getMonth(), today.getDate() + days));
+  const insertEvent = db().prepare(
+    'INSERT INTO events (title, event_date, start_time, end_time, location, note) VALUES (?, ?, ?, ?, ?, ?)'
+  );
+  const demoEvents: Array<[number, string, string | null, string | null, string | null, string | null]> = [
+    [-10, '理監事會議', '19:00', '21:00', '宗親會館二樓會議室', '討論年度預算'],
+    [2, '秋季祭祖', '09:00', '12:00', '傅氏宗祠', '請著正式服裝，9 點前到場'],
+    [9, '宗親聯誼餐會', '18:00', '21:00', '台中福華飯店', '每戶限 4 人，請先報名'],
+    [20, '獎助學金頒發典禮', '14:00', null, '宗親會館大禮堂', null],
+  ];
+  demoEvents.forEach(([days, ...rest]) => insertEvent.run([rest[0], daysFromToday(days), ...rest.slice(1)]));
   insertEvent.free();
 }
 

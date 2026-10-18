@@ -39,6 +39,10 @@ const electronAPI: ElectronAPI = {
   downloadMemberImportTemplate: () => invoke('downloadMemberImportTemplate'),
   previewMemberImport: () => invoke('previewMemberImport'),
   confirmMemberImport: (token) => invoke('confirmMemberImport', token),
+
+  listEvents: (from, to) => invoke('listEvents', from, to),
+  saveEvent: (input) => invoke('saveEvent', input),
+  deleteEvent: (id) => invoke('deleteEvent', id),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

@@ -23,6 +23,7 @@
 ├── shared/                    # 主程序與畫面共用（兩邊都 import 這裡，不要各寫一份）
 │   ├── types.ts               # 資料型別（宗親、世系圖、財務…）
 │   ├── ipc.ts                 # window.electronAPI 介面；方法名稱就是 IPC channel 名稱
+│   ├── events.ts              # 活動提醒規則（3 天內、今天已結束不提醒）
 │   ├── finance.ts             # 財務規則常數（預設會費、收支類別）
 │   └── labels.ts              # 畫面與 Excel 共用的顯示文字（性別…）
 ├── electron/                  # 主程序（Node.js 環境）
@@ -40,12 +41,13 @@
 │       ├── seed.ts            # 新安裝時的範例資料
 │       ├── members.ts         # 成員名單、新增 / 修改、搜尋
 │       ├── familyTree.ts      # 世系圖
+│       ├── events.ts          # 活動與聚會
 │       ├── documents.ts       # 上傳文件的中繼資料
 │       ├── finance.ts         # 會費名單、收支明細、統計
 │       └── dashboard.ts       # 首頁儀表板統計
 ├── src/                       # 畫面（React）
 │   ├── App.tsx                # 路由
-│   ├── components/            # 跨頁面共用元件（MainLayout、MemberSelect、DesktopOnlyNotice）
+│   ├── components/            # 跨頁面共用元件（MainLayout、EventReminder、MemberSelect、DesktopOnlyNotice）
 │   ├── hooks/                 # 共用 hooks（useAsyncAction：操作提示；useResetFormOnOpen：對話框表單重設）
 │   ├── utils/                 # 共用工具（金額、日期格式、錯誤訊息）
 │   ├── types/                 # 全域型別宣告（window.electronAPI）
@@ -53,6 +55,7 @@
 │   └── pages/                 # 每個功能頁面一個資料夾
 │       ├── Dashboard/
 │       ├── Members/           # index.tsx + constants.ts + components/MemberFormModal.tsx
+│       ├── Events/            # index.tsx（行事曆）+ components/（EventFormModal、DayPanel、UpcomingPanel）
 │       ├── Documents/         # index.tsx + components/（FilesTab、ExcelTab、ImportPreviewModal）
 │       ├── FamilyTree/        # index.tsx + layout.ts（座標計算）+ theme.ts（配色）+ components/
 │       └── Finance/           # index.tsx + constants.ts + components/（Overview、DuesTab、TransactionsTab）
@@ -60,6 +63,8 @@
 │   ├── setup.ts               # 測試環境設定
 │   ├── App.test.tsx
 │   ├── helpers/               # 測試共用：假的 window.electronAPI、render 工具
+│   ├── shared/                # shared/ 規則的測試
+│   ├── components/            # 共用元件測試
 │   ├── pages/                 # 畫面測試（jsdom）
 │   └── electron/              # 資料庫測試（Node 環境，使用暫存資料夾，不影響實際資料）
 ├── public/                    # 靜態資源（原樣複製到 build/）

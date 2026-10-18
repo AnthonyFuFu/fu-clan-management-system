@@ -13,6 +13,7 @@ import {
   ApartmentOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
+import EventReminder from '@/components/EventReminder';
 import './MainLayout.css';
 
 const { Header, Sider, Content } = Layout;
@@ -60,6 +61,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             onClick={toggleCollapsed}
             style={{ fontSize: '16px', width: 64, height: 64 }}
           />
+          <EventReminder />
         </Header>
         <Content
           className="site-layout-content"

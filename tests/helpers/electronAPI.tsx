@@ -54,6 +54,10 @@ export function mockElectronAPI(overrides: Partial<ElectronAPI> = {}): Mocked<El
     downloadMemberImportTemplate: vi.fn().mockResolvedValue(null),
     previewMemberImport: vi.fn().mockResolvedValue(null),
     confirmMemberImport: vi.fn().mockResolvedValue(0),
+
+    listEvents: vi.fn().mockResolvedValue([]),
+    saveEvent: vi.fn().mockResolvedValue(1),
+    deleteEvent: vi.fn().mockResolvedValue(undefined),
   };
   Object.assign(api, overrides);
   window.electronAPI = api;

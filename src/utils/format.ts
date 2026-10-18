@@ -26,3 +26,9 @@ export function savedFileMessage(savedTo: string | null): string | null {
   const folder = parts[parts.length - 2];
   return folder ? `已儲存：${file}（${folder} 資料夾）` : `已儲存：${file}`;
 }
+
+// 活動時間：「09:00–12:00」、「14:00 起」或「整天」
+export function formatEventTime(event: { startTime: string | null; endTime: string | null }): string {
+  if (!event.startTime) return '整天';
+  return event.endTime ? `${event.startTime}–${event.endTime}` : `${event.startTime} 起`;
+}

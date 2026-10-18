@@ -1,0 +1,34 @@
+.event-reminder-bell {
+  width: 48px;
+  height: 48px;
+  margin-inline-end: 16px;
+}
+
+.event-reminder-popover {
+  width: 360px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.upcoming-event-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-event {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.upcoming-event:last-child {
+  border-bottom: none;
+}
+
+.upcoming-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}

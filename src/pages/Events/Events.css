@@ -1,0 +1,60 @@
+.calendar-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-event {
+  overflow: hidden;
+  margin-bottom: 2px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #e6f4ff;
+  color: #0958d9;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.calendar-event:hover {
+  background: #bae0ff;
+}
+
+.calendar-event-more {
+  padding: 0 6px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.day-panel-event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.day-panel-event:last-child {
+  border-bottom: none;
+}
+
+.upcoming-panel-event {
+  display: flex;
+  gap: 12px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.upcoming-panel-event:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.upcoming-panel-date {
+  display: flex;
+  flex: 0 0 52px;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}

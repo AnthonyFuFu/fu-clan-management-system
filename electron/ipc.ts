@@ -55,4 +55,8 @@ export function registerIpcHandlers(): void {
   handle('downloadMemberImportTemplate', excel.downloadMemberImportTemplate);
   handle('previewMemberImport', excel.previewMemberImport);
   handleWrite('confirmMemberImport', excel.confirmMemberImport);
+
+  handle('listEvents', database.listEvents);
+  handleWrite('saveEvent', database.saveEvent);
+  handleWrite('deleteEvent', database.deleteEvent);
 }

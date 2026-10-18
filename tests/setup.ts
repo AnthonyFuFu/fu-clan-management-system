@@ -2,6 +2,7 @@
 // e.g. expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom/vitest';
+import '@/utils/dayjsLocale';
 
 // 以下補上 jsdom 缺少的瀏覽器 API；資料庫測試（tests/electron/）在 Node 環境執行，沒有 window
 if (typeof window !== 'undefined') {
